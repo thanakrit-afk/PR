@@ -21,6 +21,7 @@ export interface Student {
 
   // บันทึกการเยี่ยมบ้าน (ถ้าเยี่ยมแล้ว)
   visitData?: HomeVisitData;
+  password?: string; // รหัสผ่านสำหรับเข้าสู่ระบบของนักศึกษา
 }
 
 export interface HomeVisitData {

@@ -734,6 +734,7 @@ export default function App() {
                 <ParentMapPinning
                   students={students}
                   onConfirmCoordinates={handleConfirmCoordinates}
+                  onStudentsChange={setStudents}
                 />
               )}
 
