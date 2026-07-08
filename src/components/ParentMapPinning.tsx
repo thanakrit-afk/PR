@@ -308,13 +308,8 @@ export const ParentMapPinning: React.FC<ParentMapPinningProps> = ({
   };
 
   const [showLocalSystem, setShowLocalSystem] = useState(false);
-  const googleFormLink = "https://docs.google.com/forms/d/107HTXU5yMVOOpzM0PUW-5NSi7dXiQZOMnlAmy7iAwj4/edit";
-  
-  // Convert edit link to view/fill form for iframe embedding
-  const googleFormViewLink = "https://docs.google.com/forms/d/e/1FAIpQLScP_r3CdfN4w8z89uL7q9870t3W6wS8oG-D0t8y-qL6m_f68g/viewform?embedded=true"; // default viewform fallback or we can use the main edit link
-  const iframeSrc = googleFormLink.endsWith('/edit') 
-    ? googleFormLink.replace(/\/edit$/, '/viewform?embedded=true')
-    : googleFormLink;
+  const googleFormLink = "https://docs.google.com/forms/d/e/1FAIpQLSduVijD6UuX4kdNlz2DKvrHAX5rebGbri1R-YTv9IaBLBR2_w/viewform?usp=header";
+  const iframeSrc = "https://docs.google.com/forms/d/e/1FAIpQLSduVijD6UuX4kdNlz2DKvrHAX5rebGbri1R-YTv9IaBLBR2_w/viewform?embedded=true";
 
   return (
     <div id="student-parent-root" className="space-y-6">
