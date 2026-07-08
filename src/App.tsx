@@ -7,9 +7,10 @@ import { HomeVisitForm } from './components/HomeVisitForm';
 import { ExecutiveDashboard } from './components/ExecutiveDashboard';
 import { ParentMapPinning } from './components/ParentMapPinning';
 import { StudentDetailsModal } from './components/StudentDetailsModal';
+import { AdminDashboard } from './components/AdminDashboard';
 import { 
   Users, CheckCircle, Database, HelpCircle, RefreshCw, 
-  Search, Shield, AlertCircle, Sparkles, SlidersHorizontal, BookOpen, Settings
+  Search, Shield, AlertCircle, Sparkles, SlidersHorizontal, BookOpen, Settings, Lock
 } from 'lucide-react';
 
 export default function App() {
@@ -27,7 +28,7 @@ export default function App() {
     return localStorage.getItem('is_synced') === 'true';
   });
 
-  const [activeRole, setActiveRole] = useState<'teacher' | 'executive' | 'parent' | 'settings'>('teacher');
+  const [activeRole, setActiveRole] = useState<'teacher' | 'executive' | 'parent' | 'settings' | 'admin'>('teacher');
   const [isLoading, setIsLoading] = useState(false);
   const [errorNotification, setErrorNotification] = useState('');
   const [successNotification, setSuccessNotification] = useState('');
@@ -219,6 +220,7 @@ export default function App() {
             { id: 'teacher', label: 'ครูที่ปรึกษา', icon: Users },
             { id: 'executive', label: 'ผู้บริหาร/แนะแนว', icon: Shield },
             { id: 'parent', label: 'ผู้ปกครอง/นักเรียน', icon: Sparkles },
+            { id: 'admin', label: 'ผู้ดูแลระบบ (Admin)', icon: Lock },
             { id: 'settings', label: 'ตั้งค่าระบบ', icon: Settings }
           ].map(tab => {
             const Icon = tab.icon;
@@ -265,12 +267,14 @@ export default function App() {
               {activeRole === 'teacher' && 'ครูที่ปรึกษา: บันทึกความปลอดภัยและการเยี่ยมบ้าน'}
               {activeRole === 'executive' && 'แผงสารสนเทศผู้บริหารและสรุปกลุ่มเฝ้าระวัง'}
               {activeRole === 'parent' && 'ยืนยันพิกัดจีพีเอสบ้านล่วงหน้า'}
+              {activeRole === 'admin' && 'การจัดการฐานข้อมูลและสิทธิ์ผู้ดูแลระบบ'}
               {activeRole === 'settings' && 'การตั้งค่าฐานข้อมูลและการเชื่อมคลาวด์'}
             </h2>
             <p className="text-[11px] text-slate-400 font-medium">
               {activeRole === 'teacher' && 'ค้นหา คัดกรอง และบันทึกพิกัดเยี่ยมบ้าน พร้อมวิเคราะห์ความพร้อมครอบครัว'}
               {activeRole === 'executive' && 'รายงานวิเคราะห์อัตราความสำเร็จ และติดตามช่วยเหลือนักศึกษากลุ่มวิกฤต'}
               {activeRole === 'parent' && 'ประตูป้อนข้อมูลสำหรับผู้ปกครองเพื่อส่งพิกัดแผนที่ตำแหน่งบ้านให้ครูที่ปรึกษา'}
+              {activeRole === 'admin' && 'เพิ่มรายชื่อนักเรียน แก้ไขประวัติ หรือลบข้อมูลจากฐานข้อมูลของระบบ'}
               {activeRole === 'settings' && 'จัดการระบบเชื่อมโยง Google Sheets และตั้งค่า URL แอปสคริปต์กลาง'}
             </p>
           </div>
@@ -463,6 +467,14 @@ export default function App() {
                 <ParentMapPinning
                   students={students}
                   onConfirmCoordinates={handleConfirmCoordinates}
+                />
+              )}
+
+              {/* Tab 5: Admin Panel - ผู้ดูแลระบบ */}
+              {activeRole === 'admin' && (
+                <AdminDashboard
+                  students={students}
+                  onStudentsChange={setStudents}
                 />
               )}
 
