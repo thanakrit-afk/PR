@@ -1,0 +1,6 @@
+{
+  "name": "ระบบเยี่ยมบ้านนักเรียนนักศึกษา",
+  "description": "ระบบเยี่ยมบ้านนักเรียนนักศึกษา สำหรับครูที่ปรึกษาและผู้บริหาร อาชีวศึกษา เชื่อมต่อ Google Sheets ผ่าน Apps Script",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
