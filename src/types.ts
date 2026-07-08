@@ -11,6 +11,14 @@ export interface Student {
   longitude: number | null; // พิกัดลองจิจูด
   visitStatus: 'ยังไม่ได้เยี่ยม' | 'เยี่ยมแล้ว';
   
+  // ข้อมูลเพิ่มเติมตามหัวข้อในเอกสาร Google Doc
+  nickname?: string; // ชื่อเล่น
+  citizenId?: string; // เลขประจำตัวประชาชน
+  bloodGroup?: string; // หมู่โลหิต
+  studentPhone?: string; // เบอร์โทรศัพท์นักศึกษา
+  parentRelationship?: string; // ความเกี่ยวข้องกับนักเรียน เช่น บิดา, มารดา, ปู่, ย่า, ตา, ยาย
+  parentOccupation?: string; // อาชีพผู้ปกครอง
+
   // บันทึกการเยี่ยมบ้าน (ถ้าเยี่ยมแล้ว)
   visitData?: HomeVisitData;
 }

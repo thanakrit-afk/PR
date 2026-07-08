@@ -64,22 +64,50 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
   // Export CSV handler
   const handleExportCSV = () => {
     const headers = [
-      'รหัสนักศึกษา', 'ชื่อ-นามสกุล', 'ระดับชั้น', 'ห้อง', 'แผนกวิชา', 
-      'เบอร์ผู้ปกครอง', 'สถานะการเยี่ยม', 'ผลการคัดกรอง', 'วันที่เยี่ยม', 
-      'ความประสงค์/ความเห็นครู'
+      'รหัสนักศึกษา', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'เลขประจำตัวประชาชน', 'หมู่โลหิต', 'เบอร์โทรศัพท์นักศึกษา', 
+      'ระดับชั้น', 'ห้อง', 'แผนกวิชา', 'ชื่อผู้ปกครอง', 'ความเกี่ยวข้อง', 'อาชีพผู้ปกครอง', 'เบอร์ผู้ปกครอง', 
+      'ที่อยู่ปัจจุบัน', 'สถานะการเยี่ยม', 'วันที่เยี่ยม', 'ข้อมูลการเดินทาง', 'ละติจูด', 'ลองจิจูด',
+      'สภาพที่อยู่อาศัย', 'กรรมสิทธิ์บ้าน', 'สถานะครอบครัว', 'คะแนนความสัมพันธ์ (1-5)', 'รายได้เฉลี่ยต่อเดือน',
+      'ภาระหนี้สิน', 'ความเสี่ยงด้านการเรียน', 'ความเสี่ยงด้านสารเสพติด', 'ความเสี่ยงติดเกม', 'ความเสี่ยงด้านความสัมพันธ์',
+      'ความเสี่ยงด้านการเงิน', 'ความเสี่ยงการเดินทาง', 'บันทึกความเสี่ยงเพิ่มเติม', 'ผลการคัดกรอง', 'ข้อเสนอแนะครู', 'ครูผู้บันทึก'
     ];
     
     const rows = students.map(s => [
       s.id,
       s.name,
+      s.nickname || '-',
+      s.citizenId || '-',
+      s.bloodGroup || '-',
+      s.studentPhone || '-',
       s.level,
       s.room,
       s.department,
+      s.parentName,
+      s.parentRelationship || '-',
+      s.parentOccupation || '-',
       s.parentPhone,
+      s.address,
       s.visitStatus,
-      s.visitData?.screeningResult || 'ยังไม่ได้ประเมิน',
       s.visitData?.visitDate || '-',
-      s.visitData?.counselorNotes || '-'
+      s.visitData?.travelInfo || '-',
+      s.visitData?.latitude !== undefined && s.visitData?.latitude !== null ? s.visitData.latitude : (s.latitude || '-'),
+      s.visitData?.longitude !== undefined && s.visitData?.longitude !== null ? s.visitData.longitude : (s.longitude || '-'),
+      s.visitData?.houseCondition || '-',
+      s.visitData?.houseOwnership || '-',
+      s.visitData?.familyStatus || '-',
+      s.visitData?.relationshipScale || '-',
+      s.visitData?.averageMonthlyIncome || '-',
+      s.visitData?.debtStatus || '-',
+      s.visitData?.risks?.academic ? 'ใช่' : 'ไม่ใช่',
+      s.visitData?.risks?.substance ? 'ใช่' : 'ไม่ใช่',
+      s.visitData?.risks?.gaming ? 'ใช่' : 'ไม่ใช่',
+      s.visitData?.risks?.relationship ? 'ใช่' : 'ไม่ใช่',
+      s.visitData?.risks?.financial ? 'ใช่' : 'ไม่ใช่',
+      s.visitData?.risks?.travelRisk ? 'ใช่' : 'ไม่ใช่',
+      s.visitData?.riskNotes || '-',
+      s.visitData?.screeningResult || 'ยังไม่ได้ประเมิน',
+      s.visitData?.counselorNotes || '-',
+      s.visitData?.submittedBy || '-'
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 

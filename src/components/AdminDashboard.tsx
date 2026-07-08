@@ -39,6 +39,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [formParentName, setFormParentName] = useState('');
   const [formParentPhone, setFormParentPhone] = useState('');
   const [formAddress, setFormAddress] = useState('');
+  const [formNickname, setFormNickname] = useState('');
+  const [formCitizenId, setFormCitizenId] = useState('');
+  const [formBloodGroup, setFormBloodGroup] = useState('O');
+  const [formStudentPhone, setFormStudentPhone] = useState('');
+  const [formParentRelationship, setFormParentRelationship] = useState('ผู้ปกครอง');
+  const [formParentOccupation, setFormParentOccupation] = useState('');
   const [formError, setFormError] = useState('');
 
   // Handle Login
@@ -81,6 +87,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setFormParentName(student.parentName);
     setFormParentPhone(student.parentPhone);
     setFormAddress(student.address);
+    setFormNickname(student.nickname || '');
+    setFormCitizenId(student.citizenId || '');
+    setFormBloodGroup(student.bloodGroup || 'O');
+    setFormStudentPhone(student.studentPhone || '');
+    setFormParentRelationship(student.parentRelationship || 'ผู้ปกครอง');
+    setFormParentOccupation(student.parentOccupation || '');
     setFormError('');
   };
 
@@ -90,11 +102,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setFormId('');
     setFormName('');
     setFormLevel('ปวช. 1');
-    setFormDepartment('เทคโนโลยีสารสนเทศ');
+    setFormDepartment('ระบบขนส่งทางราง');
     setFormRoom('1');
     setFormParentName('');
     setFormParentPhone('');
     setFormAddress('');
+    setFormNickname('');
+    setFormCitizenId('');
+    setFormBloodGroup('O');
+    setFormStudentPhone('');
+    setFormParentRelationship('บิดา');
+    setFormParentOccupation('');
     setFormError('');
   };
 
@@ -159,7 +177,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         address: formAddress.trim(),
         latitude: null,
         longitude: null,
-        visitStatus: 'ยังไม่ได้เยี่ยม'
+        visitStatus: 'ยังไม่ได้เยี่ยม',
+        nickname: formNickname.trim(),
+        citizenId: formCitizenId.trim(),
+        bloodGroup: formBloodGroup.trim(),
+        studentPhone: formStudentPhone.trim(),
+        parentRelationship: formParentRelationship.trim(),
+        parentOccupation: formParentOccupation.trim()
       };
 
       onStudentsChange([...students, newStudent]);
@@ -186,7 +210,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             room: formRoom.trim(),
             parentName: formParentName.trim(),
             parentPhone: formParentPhone.trim(),
-            address: formAddress.trim()
+            address: formAddress.trim(),
+            nickname: formNickname.trim(),
+            citizenId: formCitizenId.trim(),
+            bloodGroup: formBloodGroup.trim(),
+            studentPhone: formStudentPhone.trim(),
+            parentRelationship: formParentRelationship.trim(),
+            parentOccupation: formParentOccupation.trim()
           };
         }
         return s;
@@ -446,142 +476,256 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Student ID */}
+              <div className="space-y-4">
+                {/* Section 1 title */}
+                <div className="border-b border-slate-150 pb-1.5 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">๑. ข้อมูลส่วนตัวนักเรียน/นักศึกษา</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Student ID */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      รหัสประจำตัวนักศึกษา <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="เช่น 6620901001"
+                      value={formId}
+                      onChange={(e) => setFormId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-mono font-bold"
+                    />
+                  </div>
+
+                  {/* Name */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      ชื่อ-นามสกุล <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="เช่น นายปัญญา รักดี"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Nickname */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      ชื่อเล่น
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น สม"
+                      value={formNickname}
+                      onChange={(e) => setFormNickname(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700"
+                    />
+                  </div>
+
+                  {/* Citizen ID */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      เลขประจำตัวประชาชน
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={13}
+                      placeholder="เลข 13 หลัก"
+                      value={formCitizenId}
+                      onChange={(e) => setFormCitizenId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-mono"
+                    />
+                  </div>
+
+                  {/* Blood group */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      หมู่โลหิต
+                    </label>
+                    <select
+                      value={formBloodGroup}
+                      onChange={(e) => setFormBloodGroup(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700"
+                    >
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="O">O</option>
+                      <option value="AB">AB</option>
+                      <option value="ไม่ระบุ">ไม่ระบุ</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Level selection */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      ระดับชั้น <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formLevel}
+                      onChange={(e) => setFormLevel(e.target.value as Student['level'])}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
+                    >
+                      <option value="ปวช. 1">ปวช. 1</option>
+                      <option value="ปวช. 2">ปวช. 2</option>
+                      <option value="ปวช. 3">ปวช. 3</option>
+                      <option value="ปวส. 1">ปวส. 1</option>
+                      <option value="ปวส. 2">ปวส. 2</option>
+                    </select>
+                  </div>
+
+                  {/* Room */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      ห้องเรียน <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="เช่น 1 หรือ 2"
+                      value={formRoom}
+                      onChange={(e) => setFormRoom(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
+                    />
+                  </div>
+
+                  {/* Department */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      แผนกวิชา <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formDepartment}
+                      onChange={(e) => setFormDepartment(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
+                    >
+                      <option value="ระบบขนส่งทางราง">ระบบขนส่งทางราง</option>
+                      <option value="สาขาเทคโนโลยีธุรกิจดิจิทัล">สาขาเทคโนโลยีธุรกิจดิจิทัล</option>
+                      <option value="ช่างยนต์">ช่างยนต์</option>
+                      <option value="ช่างไฟฟ้า">ช่างไฟฟ้า</option>
+                      <option value="ช่างอิเล็กทรอนิกส์">ช่างอิเล็กทรอนิกส์</option>
+                      <option value="ช่างกล">ช่างกล</option>
+                      <option value="ช่างเชื่อม">ช่างเชื่อม</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    รหัสประจำตัวนักศึกษา <span className="text-rose-500">*</span>
+                    เบอร์โทรศัพท์นักศึกษา
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="เช่น 6620901001"
-                    value={formId}
-                    onChange={(e) => setFormId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-mono font-bold"
-                  />
-                </div>
-
-                {/* Name */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    ชื่อ-นามสกุล <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="เช่น นายปัญญา รักดี"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-bold"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                {/* Level selection */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    ระดับชั้น <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={formLevel}
-                    onChange={(e) => setFormLevel(e.target.value as Student['level'])}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
-                  >
-                    <option value="ปวช. 1">ปวช. 1</option>
-                    <option value="ปวช. 2">ปวช. 2</option>
-                    <option value="ปวช. 3">ปวช. 3</option>
-                    <option value="ปวส. 1">ปวส. 1</option>
-                    <option value="ปวส. 2">ปวส. 2</option>
-                  </select>
-                </div>
-
-                {/* Room */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    ห้องเรียน <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="เช่น 1 หรือ 2"
-                    value={formRoom}
-                    onChange={(e) => setFormRoom(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
-                  />
-                </div>
-
-                {/* Department */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    แผนกวิชา <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="เช่น เทคโนโลยีสารสนเทศ"
-                    value={formDepartment}
-                    onChange={(e) => setFormDepartment(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Parent Name */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    <span className="flex items-center gap-1">
-                      <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-                      ชื่อผู้ปกครอง <span className="text-rose-500">*</span>
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="ชื่อ-สกุลผู้ปกครองหรือผู้ดูแล"
-                    value={formParentName}
-                    onChange={(e) => setFormParentName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
-                  />
-                </div>
-
-                {/* Parent Phone */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
-                      เบอร์โทรศัพท์ติดต่อ <span className="text-rose-500">*</span>
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="เช่น 081-XXX-XXXX"
-                    value={formParentPhone}
-                    onChange={(e) => setFormParentPhone(e.target.value)}
+                    placeholder="เช่น 089-XXX-XXXX"
+                    value={formStudentPhone}
+                    onChange={(e) => setFormStudentPhone(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-mono"
                   />
                 </div>
-              </div>
 
-              {/* Address */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    ที่อยู่บ้านปัจจุบันของนักเรียน <span className="text-rose-500">*</span>
-                  </span>
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="กรอกบ้านเลขที่ ซอย ถนน ตำบล อำเภอ จังหวัด"
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 leading-normal font-medium"
-                />
+                {/* Section 2 title */}
+                <div className="border-b border-slate-150 pb-1.5 pt-2 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">๒. ข้อมูลผู้ปกครองและครอบครัว</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Parent Name */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      <span className="flex items-center gap-1">
+                        <UserCheck className="w-3.5 h-3.5 text-slate-400" />
+                        ชื่อผู้ปกครอง <span className="text-rose-500">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="ชื่อ-สกุลผู้ปกครองหรือผู้ดูแล"
+                      value={formParentName}
+                      onChange={(e) => setFormParentName(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-medium"
+                    />
+                  </div>
+
+                  {/* Relationship */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      ความเกี่ยวข้องกับนักเรียน
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น บิดา, มารดา, ปู่, ย่า, ตา, ยาย"
+                      value={formParentRelationship}
+                      onChange={(e) => setFormParentRelationship(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Parent Occupation */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      อาชีพผู้ปกครอง
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="เช่น ค้าขาย, ทำสวน, รับจ้างทั่วไป"
+                      value={formParentOccupation}
+                      onChange={(e) => setFormParentOccupation(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700"
+                    />
+                  </div>
+
+                  {/* Parent Phone */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        เบอร์โทรศัพท์ติดต่อผู้ปกครอง <span className="text-rose-500">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="เช่น 081-XXX-XXXX"
+                      value={formParentPhone}
+                      onChange={(e) => setFormParentPhone(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Section 3 title */}
+                <div className="border-b border-slate-150 pb-1.5 pt-2 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">๓. ข้อมูลสภาพแวดล้อมและที่พักอาศัย</span>
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      ที่อยู่บ้านปัจจุบันของนักเรียน <span className="text-rose-500">*</span>
+                    </span>
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    placeholder="กรอกบ้านเลขที่ ซอย ถนน ตำบล อำเภอ จังหวัด"
+                    value={formAddress}
+                    onChange={(e) => setFormAddress(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 leading-normal font-medium"
+                  />
+                </div>
               </div>
 
               {/* Save/Cancel footer actions inside modal */}
