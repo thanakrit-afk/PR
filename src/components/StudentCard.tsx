@@ -6,12 +6,14 @@ interface StudentCardProps {
   student: Student;
   onRecordVisit: (student: Student) => void;
   onViewDetails: (student: Student) => void;
+  onEditProfile?: (student: Student) => void;
 }
 
 export const StudentCard: React.FC<StudentCardProps> = ({
   student,
   onRecordVisit,
-  onViewDetails
+  onViewDetails,
+  onEditProfile
 }) => {
   const isVisited = student.visitStatus === 'เยี่ยมแล้ว';
   
@@ -66,6 +68,16 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-brand-50 text-brand-700 border border-brand-100/60">
                 {student.level}/{student.room}
               </span>
+              {onEditProfile && (
+                <button
+                  type="button"
+                  onClick={() => onEditProfile(student)}
+                  className="p-1 hover:bg-slate-100 hover:text-brand-600 rounded text-slate-400 transition-all cursor-pointer border border-transparent hover:border-slate-200"
+                  title="แก้ไขประวัตินักศึกษา"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </button>
+              )}
             </div>
           </div>
 

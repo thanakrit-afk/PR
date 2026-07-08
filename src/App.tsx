@@ -8,9 +8,10 @@ import { ExecutiveDashboard } from './components/ExecutiveDashboard';
 import { ParentMapPinning } from './components/ParentMapPinning';
 import { StudentDetailsModal } from './components/StudentDetailsModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { StudentFormModal } from './components/StudentFormModal';
 import { 
   Users, CheckCircle, Database, HelpCircle, RefreshCw, 
-  Search, Shield, AlertCircle, Sparkles, SlidersHorizontal, BookOpen, Settings, Lock
+  Search, Shield, AlertCircle, Sparkles, SlidersHorizontal, BookOpen, Settings, Lock, UserPlus, LogOut, KeyRound, X
 } from 'lucide-react';
 
 export default function App() {
@@ -37,6 +38,14 @@ export default function App() {
   const [errorNotification, setErrorNotification] = useState('');
   const [successNotification, setSuccessNotification] = useState('');
 
+  // Teacher Authentication States
+  const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState<boolean>(() => {
+    return sessionStorage.getItem('teacher_authenticated') === 'true';
+  });
+  const [teacherLoginUsername, setTeacherLoginUsername] = useState('');
+  const [teacherLoginPassword, setTeacherLoginPassword] = useState('');
+  const [teacherLoginError, setTeacherLoginError] = useState('');
+
   // Filtering / Search States for Student List
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('all');
@@ -46,6 +55,45 @@ export default function App() {
   // Active form / modal triggers
   const [activeFormStudent, setActiveFormStudent] = useState<Student | null>(null);
   const [viewingDetailsStudent, setViewingDetailsStudent] = useState<Student | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formModalStudent, setFormModalStudent] = useState<Student | null>(null);
+
+  const handleSaveStudentProfile = (updatedStudent: Student) => {
+    const exists = students.some(s => s.id.toLowerCase() === updatedStudent.id.toLowerCase());
+    let updatedList: Student[];
+    if (exists && formModalStudent) {
+      // Edit existing
+      updatedList = students.map(s => s.id.toLowerCase() === formModalStudent.id.toLowerCase() ? updatedStudent : s);
+      setSuccessNotification(`แก้ไขข้อมูลประวัตินักเรียน "${updatedStudent.name}" สำเร็จเรียบร้อยแล้ว`);
+    } else {
+      // Add new
+      updatedList = [...students, updatedStudent];
+      setSuccessNotification(`เพิ่มรายชื่อนักเรียนนักศึกษาใหม่ "${updatedStudent.name}" สำเร็จเรียบร้อยแล้ว`);
+    }
+    setStudents(updatedList);
+  };
+
+  // Teacher Authentication Handlers
+  const handleTeacherLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTeacherLoginError('');
+
+    if (teacherLoginUsername.trim() === 'teacher' && teacherLoginPassword === '1234') {
+      setIsTeacherLoggedIn(true);
+      sessionStorage.setItem('teacher_authenticated', 'true');
+      setTeacherLoginUsername('');
+      setTeacherLoginPassword('');
+      setSuccessNotification('เข้าสู่ระบบสำหรับครูที่ปรึกษาสำเร็จ ยินดีต้อนรับคุณครูสมชาย');
+    } else {
+      setTeacherLoginError('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง (คำแนะนำ: ชื่อผู้ใช้งาน = teacher, รหัสผ่าน = 1234)');
+    }
+  };
+
+  const handleTeacherLogout = () => {
+    setIsTeacherLoggedIn(false);
+    sessionStorage.removeItem('teacher_authenticated');
+    setSuccessNotification('ออกจากระบบครูที่ปรึกษาเรียบร้อยแล้ว');
+  };
 
   // Auto-save changes to localStorage whenever students change
   useEffect(() => {
@@ -515,13 +563,35 @@ export default function App() {
         </nav>
         
         <div className="p-4 bg-slate-950 border-t border-slate-900/60 hidden md:block">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">TS</div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-bold truncate text-slate-200">ครูสมชาย (T. Somchai)</p>
-              <p className="text-[10px] text-slate-400">Consultant Teacher</p>
+          {isTeacherLoggedIn ? (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">TS</div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold truncate text-slate-200">ครูสมชาย (T. Somchai)</p>
+                  <p className="text-[10px] text-slate-400">Consultant Teacher</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleTeacherLogout}
+                title="ออกจากระบบครูที่ปรึกษา"
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-xs shadow-xs">
+                <Lock className="w-3.5 h-3.5" />
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-xs font-bold truncate text-slate-400">ยังไม่เข้าสู่ระบบ</p>
+                <p className="text-[10px] text-slate-500">โปรดล็อกอินก่อนเข้าถึง</p>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -572,23 +642,41 @@ export default function App() {
         <main className="flex-1 py-6 px-4 md:px-8 overflow-y-auto max-w-7xl w-full mx-auto">
           {/* Dynamic Warning Notification banner */}
           {errorNotification && (
-            <div className="mb-6 p-4 bg-rose-50 text-rose-800 border border-rose-100 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs animate-fadeIn">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-              <div className="flex-1">
-                <p className="font-semibold text-rose-900">แจ้งเตือนระบบ</p>
-                <p className="text-rose-700/90 mt-0.5 leading-normal">{errorNotification}</p>
+            <div className="mb-6 p-4 bg-rose-50 text-rose-800 border border-rose-100 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs animate-fadeIn justify-between">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                <div className="flex-1">
+                  <p className="font-semibold text-rose-900">แจ้งเตือนระบบ</p>
+                  <p className="text-rose-700/90 mt-0.5 leading-normal">{errorNotification}</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setErrorNotification('')}
+                className="p-1 hover:bg-rose-100 rounded text-rose-400 hover:text-rose-700 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
           {/* Dynamic Success Notification banner */}
           {successNotification && (
-            <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs animate-fadeIn">
-              <CheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
-              <div className="flex-1">
-                <p className="font-semibold text-emerald-900">ดำเนินการสำเร็จ</p>
-                <p className="text-emerald-700/90 mt-0.5 leading-normal">{successNotification}</p>
+            <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-2xl text-xs flex items-start gap-2.5 shadow-xs animate-fadeIn justify-between">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
+                <div className="flex-1">
+                  <p className="font-semibold text-emerald-900">ดำเนินการสำเร็จ</p>
+                  <p className="text-emerald-700/90 mt-0.5 leading-normal">{successNotification}</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setSuccessNotification('')}
+                className="p-1 hover:bg-emerald-100 rounded text-emerald-400 hover:text-emerald-700 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -603,122 +691,208 @@ export default function App() {
             <>
               {/* Tab 1: Teacher Role - ครูที่ปรึกษา */}
               {activeRole === 'teacher' && (
-                <div className="space-y-6">
-                  
-                  {/* Search & Advanced Filters Panels */}
-                  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div>
-                        <h2 className="text-sm font-bold text-slate-800">ค้นหารายชื่อและคัดกรองนักศึกษา</h2>
-                        <p className="text-xs text-slate-500">เลือกกรองตามระดับชั้น แผนกวิชา หรือเลือกสถานะการเยี่ยม</p>
+                !isTeacherLoggedIn ? (
+                  <div className="max-w-md mx-auto my-10 animate-fadeIn">
+                    <div className="bg-white rounded-3xl border border-slate-200/80 shadow-md overflow-hidden text-left">
+                      {/* Login header bar */}
+                      <div className="bg-slate-900 text-white p-6 text-center space-y-1.5">
+                        <div className="w-12 h-12 bg-brand-500 rounded-2xl mx-auto flex items-center justify-center text-white shadow-sm mb-1.5">
+                          <Users className="w-6 h-6 text-white" />
+                        </div>
+                        <h3 className="text-sm font-extrabold uppercase tracking-wider">เข้าสู่ระบบสำหรับครูที่ปรึกษา</h3>
+                        <p className="text-[11px] text-brand-300">Advisor Teacher Portal Access</p>
                       </div>
 
-                      {/* Filter stats block */}
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-slate-400">ตัวเลือกการจัดกลุ่ม:</span>
-                        <span className="font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">
-                          พบตรงเงื่อนไข {filteredStudents.length} ราย
-                        </span>
-                      </div>
-                    </div>
+                      {/* Login body */}
+                      <form onSubmit={handleTeacherLogin} className="p-6 space-y-4">
+                        {teacherLoginError && (
+                          <div className="p-3.5 bg-rose-50 text-rose-800 border border-rose-100 rounded-xl text-xs flex items-start gap-2 animate-fadeIn">
+                            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                            <span className="font-semibold leading-relaxed">{teacherLoginError}</span>
+                          </div>
+                        )}
 
-                    {/* Filter Selects */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {/* Level Select */}
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ระดับชั้นเรียน</span>
-                        <select
-                          value={selectedLevel}
-                          onChange={(e) => setSelectedLevel(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white"
-                        >
-                          <option value="all">ทั้งหมด ทุกระดับชั้น</option>
-                          {uniqueLevels.map(lvl => (
-                            <option key={lvl} value={lvl}>{lvl}</option>
-                          ))}
-                        </select>
-                      </div>
+                        <div className="space-y-3.5">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              ชื่อผู้ใช้งาน (Username)
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="เช่น teacher"
+                              value={teacherLoginUsername}
+                              onChange={(e) => setTeacherLoginUsername(e.target.value)}
+                              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-semibold"
+                            />
+                          </div>
 
-                      {/* Department Select */}
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">แผนกสาขาวิชา</span>
-                        <select
-                          value={selectedDept}
-                          onChange={(e) => setSelectedDept(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white"
-                        >
-                          <option value="all">ทั้งหมด ทุกแผนก</option>
-                          {uniqueDepartments.map(dept => (
-                            <option key={dept} value={dept}>{dept}</option>
-                          ))}
-                        </select>
-                      </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              รหัสผ่าน (Password)
+                            </label>
+                            <input
+                              type="password"
+                              required
+                              placeholder="กรอกรหัสผ่าน 4 หลัก"
+                              value={teacherLoginPassword}
+                              onChange={(e) => setTeacherLoginPassword(e.target.value)}
+                              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-700 font-mono font-bold"
+                            />
+                          </div>
+                        </div>
 
-                      {/* Visit Status Select */}
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">สถานะการเยี่ยมบ้าน</span>
-                        <select
-                          value={selectedStatus}
-                          onChange={(e) => setSelectedStatus(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white"
-                        >
-                          <option value="all">ทั้งหมด ทุกสถานะ</option>
-                          <option value="เยี่ยมแล้ว">เยี่ยมแล้ว</option>
-                          <option value="ยังไม่ได้เยี่ยม">ยังไม่ได้เยี่ยม</option>
-                        </select>
-                      </div>
-
-                      {/* Simple clear button */}
-                      <div className="flex items-end">
                         <button
-                          type="button"
-                          onClick={() => {
-                            setSearchQuery('');
-                            setSelectedLevel('all');
-                            setSelectedDept('all');
-                            setSelectedStatus('all');
-                          }}
-                          className="w-full py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer border border-slate-200"
+                          type="submit"
+                          className="w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-xs flex items-center justify-center gap-1.5 mt-2"
                         >
-                          ล้างตัวกรองทั้งหมด
+                          <KeyRound className="w-4 h-4" />
+                          ยืนยันเพื่อเข้าใช้งานระบบ
                         </button>
-                      </div>
+
+                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-150 text-[11px] text-slate-500 space-y-1">
+                          <p className="font-bold text-slate-600">🔑 รหัสผ่านทดลองสำหรับทดสอบระบบ:</p>
+                          <p>• ชื่อผู้ใช้: <code className="bg-slate-200 px-1.5 py-0.5 rounded font-mono font-bold text-brand-600">teacher</code></p>
+                          <p>• รหัสผ่าน: <code className="bg-slate-200 px-1.5 py-0.5 rounded font-mono font-bold text-brand-600">1234</code></p>
+                        </div>
+                      </form>
                     </div>
                   </div>
+                ) : (
+                  <div className="space-y-6">
+                    
+                    {/* Search & Advanced Filters Panels */}
+                    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div>
+                          <h2 className="text-sm font-bold text-slate-800">ค้นหารายชื่อและคัดกรองนักศึกษา</h2>
+                          <p className="text-xs text-slate-500">เลือกกรองตามระดับชั้น แผนกวิชา หรือเลือกสถานะการเยี่ยม</p>
+                        </div>
 
-                  {/* Students Display Grid */}
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">รายชื่อนักศึกษาที่สอดคล้อง ({filteredStudents.length} ราย)</h3>
-                      {isSynced && (
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
-                          <RefreshCw className="w-3 h-3 animate-spin text-brand-500" />
-                          ซิงค์ชีตสตรีมพร้อมทำงาน
-                        </span>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormModalStudent(null);
+                              setIsFormModalOpen(true);
+                            }}
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            เพิ่มรายชื่อนักศึกษาใหม่
+                          </button>
+
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-slate-400">ตัวเลือกการจัดกลุ่ม:</span>
+                            <span className="font-semibold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full">
+                              พบตรงเงื่อนไข {filteredStudents.length} ราย
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filter Selects */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {/* Level Select */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ระดับชั้นเรียน</span>
+                          <select
+                            value={selectedLevel}
+                            onChange={(e) => setSelectedLevel(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white"
+                          >
+                            <option value="all">ทั้งหมด ทุกระดับชั้น</option>
+                            {uniqueLevels.map(lvl => (
+                              <option key={lvl} value={lvl}>{lvl}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Department Select */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">แผนกสาขาวิชา</span>
+                          <select
+                            value={selectedDept}
+                            onChange={(e) => setSelectedDept(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white"
+                          >
+                            <option value="all">ทั้งหมด ทุกแผนก</option>
+                            {uniqueDepartments.map(dept => (
+                              <option key={dept} value={dept}>{dept}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Visit Status Select */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">สถานะการเยี่ยมบ้าน</span>
+                          <select
+                            value={selectedStatus}
+                            onChange={(e) => setSelectedStatus(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white"
+                          >
+                            <option value="all">ทั้งหมด ทุกสถานะ</option>
+                            <option value="เยี่ยมแล้ว">เยี่ยมแล้ว</option>
+                            <option value="ยังไม่ได้เยี่ยม">ยังไม่ได้เยี่ยม</option>
+                          </select>
+                        </div>
+
+                        {/* Simple clear button */}
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery('');
+                              setSelectedLevel('all');
+                              setSelectedDept('all');
+                              setSelectedStatus('all');
+                            }}
+                            className="w-full py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer border border-slate-200"
+                          >
+                            ล้างตัวกรองทั้งหมด
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Students Display Grid */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">รายชื่อนักศึกษาที่สอดคล้อง ({filteredStudents.length} ราย)</h3>
+                        {isSynced && (
+                          <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                            <RefreshCw className="w-3 h-3 animate-spin text-brand-500" />
+                            ซิงค์ชีตสตรีมพร้อมทำงาน
+                          </span>
+                        )}
+                      </div>
+
+                      {filteredStudents.length === 0 ? (
+                        <div className="text-center py-20 bg-white rounded-2xl border border-slate-200/60 shadow-xs">
+                          <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                          <p className="text-slate-500 font-bold text-sm">ไม่พบข้อมูลนักเรียนนักศึกษาที่ค้นหา</p>
+                          <p className="text-xs text-slate-400 mt-1">โปรดตรวจสอบคำค้นหาหรือตัวกรองระดับชั้นใหม่อีกครั้ง</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {filteredStudents.map(student => (
+                            <StudentCard
+                              key={student.id}
+                              student={student}
+                              onRecordVisit={(s) => setActiveFormStudent(s)}
+                              onViewDetails={(s) => setViewingDetailsStudent(s)}
+                              onEditProfile={(s) => {
+                                setFormModalStudent(s);
+                                setIsFormModalOpen(true);
+                              }}
+                            />
+                          ))}
+                        </div>
                       )}
                     </div>
 
-                    {filteredStudents.length === 0 ? (
-                      <div className="text-center py-20 bg-white rounded-2xl border border-slate-200/60 shadow-xs">
-                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                        <p className="text-slate-500 font-bold text-sm">ไม่พบข้อมูลนักเรียนนักศึกษาที่ค้นหา</p>
-                        <p className="text-xs text-slate-400 mt-1">โปรดตรวจสอบคำค้นหาหรือตัวกรองระดับชั้นใหม่อีกครั้ง</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {filteredStudents.map(student => (
-                          <StudentCard
-                            key={student.id}
-                            student={student}
-                            onRecordVisit={(s) => setActiveFormStudent(s)}
-                            onViewDetails={(s) => setViewingDetailsStudent(s)}
-                          />
-                        ))}
-                      </div>
-                    )}
                   </div>
-
-                </div>
+                )
               )}
 
               {/* Tab 2: Admin/Executive Dashboard - ภาพรวมผู้บริหาร */}
@@ -824,6 +998,18 @@ export default function App() {
             onClose={() => setViewingDetailsStudent(null)}
           />
         )}
+
+        {/* REUSABLE STUDENT FORM MODAL (FOR ADDING & EDITING PROFILES BY TEACHERS) */}
+        <StudentFormModal
+          isOpen={isFormModalOpen}
+          student={formModalStudent}
+          onClose={() => {
+            setIsFormModalOpen(false);
+            setFormModalStudent(null);
+          }}
+          onSave={handleSaveStudentProfile}
+          studentsList={students}
+        />
 
         {/* Modern Footer bar */}
         <footer className="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400 font-medium shrink-0">

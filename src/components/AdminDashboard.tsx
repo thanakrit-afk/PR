@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Student } from '../types';
+import { StudentFormModal } from './StudentFormModal';
 import { 
   Lock, ShieldCheck, UserCheck, LogOut, Trash2, Edit, Plus, 
   Search, AlertCircle, X, Check, Save, UserPlus, Phone, MapPin, Layers
@@ -14,6 +15,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   students,
   onStudentsChange
 }) => {
+  // Save handler for reused modal
+  const handleSaveFromModal = (updatedStudent: Student) => {
+    let updated: Student[];
+    if (editingStudent) {
+      updated = students.map(s => s.id === editingStudent.id ? updatedStudent : s);
+    } else {
+      updated = [...students, updatedStudent];
+    }
+    onStudentsChange(updated);
+  };
   // Login State
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     return sessionStorage.getItem('admin_authenticated') === 'true';
@@ -447,7 +458,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* ADD / EDIT DIALOG MODAL CONTAINER */}
-      {(isAddingStudent || editingStudent) && (
+      <StudentFormModal
+        isOpen={!!(isAddingStudent || editingStudent)}
+        student={editingStudent}
+        onClose={closeModals}
+        onSave={handleSaveFromModal}
+        studentsList={students}
+      />
+      {false && (isAddingStudent || editingStudent) && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-lg shadow-md border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
             
