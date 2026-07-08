@@ -172,8 +172,17 @@ export default function App() {
   const handleResetToDefaults = () => {
     if (window.confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น (Sandbox) หรือไม่? ข้อมูลการทดสอบของคุณจะถูกลบออก')) {
       setStudents(INITIAL_MOCK_STUDENTS);
-      localStorage.removeItem('student_visits_data');
+      localStorage.setItem('student_visits_data', JSON.stringify(INITIAL_MOCK_STUDENTS));
       setSuccessNotification('รีเซ็ตข้อมูลเป็นค่าเริ่มต้นสำหรับการนำเสนอเรียบร้อยแล้ว');
+    }
+  };
+
+  // Clear all data to start fresh for real use (Production/Actual usage)
+  const handleClearAllData = () => {
+    if (window.confirm('คำเตือน: คุณต้องการลบรายชื่อนักศึกษาและข้อมูลการเยี่ยมบ้านทั้งหมดออกจากระบบเพื่อเริ่มใช้งานจริงใช่หรือไม่? (การดำเนินการนี้จะไม่ส่งผลกระทบต่อข้อมูลที่มีอยู่บน Google Sheets ของคุณ)')) {
+      setStudents([]);
+      localStorage.setItem('student_visits_data', JSON.stringify([]));
+      setSuccessNotification('ล้างฐานข้อมูลนักเรียนเดิมออกทั้งหมดแล้ว คุณสามารถเริ่มกรอกรายชื่อจริงด้วยตนเอง หรือเชื่อมต่อดึงข้อมูลจริงผ่าน Google Sheets ได้ทันที');
     }
   };
 
@@ -491,18 +500,53 @@ export default function App() {
                     isLoading={isLoading}
                   />
 
-                  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
-                    <h3 className="text-base font-bold text-slate-800 mb-2">ล้างข้อมูล Sandbox และเครื่องมือ</h3>
-                    <p className="text-xs text-slate-500 mb-4">จัดพอร์ตทดสอบระบบใหม่ หรือ คืนสถานะค่าเริ่มต้นจำลองของเด็กทุกคนที่ยังไม่ได้ลงบันทึก</p>
-                    
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={handleResetToDefaults}
-                        className="px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold rounded-xl transition-all cursor-pointer"
-                      >
-                        รีเซ็ตข้อมูลเป็น Sandbox เริ่มต้น
-                      </button>
+                  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                        การสลับสิทธิ์ข้อมูลสำหรับเริ่มใช้งานจริง (Sandbox vs. Production Setup)
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        เมื่อคุณต้องการนำแอปพลิเคชันนี้ไปใช้งานจริงในวิทยาลัย/โรงเรียนของคุณ คุณสามารถล้างข้อมูลกลุ่มจำลอง (Mock Data) 
+                        เพื่อเริ่มต้นจากฐานข้อมูลว่างเปล่า จากนั้นจึงพิมพ์รายชื่อจริง หรือกดซิงค์ข้อมูลจริงทั้งหมดผ่าน Google Sheets ที่คุณเชื่อมโยงได้ทันที
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      {/* Left: Clear to Blank for Real Use */}
+                      <div className="p-4 border border-rose-100 rounded-xl bg-rose-50/30 flex flex-col justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-rose-800 uppercase tracking-tight">๑. ล้างรายชื่อนักเรียนเดิมทั้งหมด (สำหรับใช้งานจริง)</h4>
+                          <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                            ลบนักเรียนกลุ่มตัวอย่างทั้งหมดออกจากระบบ เพื่อเริ่มต้นจากระบบฐานข้อมูลว่างเปล่า (Empty List) 
+                            เหมาะสำหรับการเริ่มนำเข้าข้อมูลจริงของแผนกวิชา/วิทยาลัยของคุณ
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearAllData}
+                          className="mt-4 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer w-full text-center"
+                        >
+                          ล้างฐานข้อมูลนักเรียนเพื่อใช้จริง
+                        </button>
+                      </div>
+
+                      {/* Right: Reset to Sample Data */}
+                      <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 flex flex-col justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-tight">๒. โหลดกลุ่มรายชื่อทดสอบกลับมา (สำหรับสาธิต/พัฒนา)</h4>
+                          <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                            คืนสถานะประวัติและรายชื่อนักศึกษาจำลองทั้งหมด เพื่อทำการแสดงผล สาธิต หรือใช้นำเสนอต่อคณะกรรมการ/ผู้บริหาร
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleResetToDefaults}
+                          className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg transition-all cursor-pointer w-full text-center"
+                        >
+                          โหลดกลุ่มตัวอย่างจำลองกลับมา
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
