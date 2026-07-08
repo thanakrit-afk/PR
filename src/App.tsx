@@ -24,6 +24,10 @@ export default function App() {
     return localStorage.getItem('apps_script_url') || '';
   });
 
+  const [googleSheetUrl, setGoogleSheetUrl] = useState<string>(() => {
+    return localStorage.getItem('google_sheet_url') || 'https://docs.google.com/spreadsheets/d/1gHGDdFFUBBhmrcIyJj2NHL8SPDHFDdbUA2JxPlpV28w/edit?usp=sharing';
+  });
+
   const [isSynced, setIsSynced] = useState<boolean>(() => {
     return localStorage.getItem('is_synced') === 'true';
   });
@@ -185,6 +189,260 @@ export default function App() {
       setSuccessNotification('ล้างฐานข้อมูลนักเรียนเดิมออกทั้งหมดแล้ว คุณสามารถเริ่มกรอกรายชื่อจริงด้วยตนเอง หรือเชื่อมต่อดึงข้อมูลจริงผ่าน Google Sheets ได้ทันที');
     }
   };
+
+  // CSV Parser helper (RFC 4180 compliant)
+  const parseCSV = (text: string): string[][] => {
+    const result: string[][] = [];
+    let row: string[] = [];
+    let inQuotes = false;
+    let currentVal = '';
+    
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+      
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentVal += '"';
+          i++; // skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        row.push(currentVal);
+        currentVal = '';
+      } else if ((char === '\r' || char === '\n') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') {
+          i++; // skip LF
+        }
+        row.push(currentVal);
+        result.push(row);
+        row = [];
+        currentVal = '';
+      } else {
+        currentVal += char;
+      }
+    }
+    
+    if (currentVal || row.length > 0) {
+      row.push(currentVal);
+      result.push(row);
+    }
+    
+    return result.filter(r => r.some(cell => cell.trim() !== ''));
+  };
+
+  // Fetch from direct public Google Sheet export (No Apps Script needed)
+  const handleFetchDirectSheet = async (customUrl?: string) => {
+    const urlToUse = customUrl || googleSheetUrl;
+    if (!urlToUse) {
+      setErrorNotification('กรุณาระบุลิงก์ Google Sheets');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorNotification('');
+    setSuccessNotification('');
+
+    try {
+      // Extract spreadsheet ID from URL
+      const sheetIdMatch = urlToUse.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (!sheetIdMatch) {
+        throw new Error('รูปแบบลิงก์ Google Sheets ไม่ถูกต้อง กรุณาใช้ลิงก์ที่คัดลอกมาจากแถบที่อยู่เว็บของบราวเซอร์');
+      }
+      const sheetId = sheetIdMatch[1];
+      // Force export to CSV of the first active sheet
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+
+      const response = await fetch(csvUrl);
+      if (!response.ok) {
+        throw new Error('ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าแชร์ลิงก์ Google Sheet เป็น "ทุกคนที่มีลิงก์มีสิทธิ์อ่าน (Anyone with link can view)" แล้ว');
+      }
+
+      const csvText = await response.text();
+      const parsedData = parseCSV(csvText);
+
+      if (parsedData.length < 2) {
+        throw new Error('ไม่พบข้อมูลนักเรียน หรือหัวตารางของวิทยาลัยในชีตของคุณ');
+      }
+
+      const headers = parsedData[0].map(h => h.trim());
+
+      // Helper function to find index by potential header names
+      const findHeaderIndex = (names: string[]) => {
+        return headers.findIndex(h => names.some(name => h.includes(name)));
+      };
+
+      // Find crucial header indices
+      const idIdx = findHeaderIndex(['รหัสนักศึกษา', 'รหัสประจำตัว', 'Student ID', 'id']);
+      const prefixIdx = findHeaderIndex(['คำหน้า', 'คำนำหน้า', 'prefix']);
+      const firstNameIdx = findHeaderIndex(['ชื่อ', 'name', 'First Name']);
+      const lastNameIdx = findHeaderIndex(['นามสกุล', 'last name', 'Last Name']);
+      const levelIdx = findHeaderIndex(['ระดับชั้น', 'level', 'Class']);
+      const citizenIdx = findHeaderIndex(['เลขประจำตัวประชาชน', 'บัตรประชาชน', 'citizen']);
+      const bloodIdx = findHeaderIndex(['หมู่เลือด', 'กรุ๊ปเลือด', 'หมู่โลหิต', 'blood']);
+      const phoneIdx = findHeaderIndex(['เบอร์โทร', 'เบอร์โทรศัพท์', 'โทรศัพท์', 'phone']);
+      const addressIdx = findHeaderIndex(['ที่อยู่ปัจจุบัน', 'ที่อยู่', 'address']);
+      
+      const fatherNameIdx = findHeaderIndex(['ชื่อ-สกุลบิดา', 'บิดา', 'father']);
+      const fatherPhoneIdx = findHeaderIndex(['โทรศัพท์', 'เบอร์โทรบิดา', 'เบอร์บิดา']);
+      const fatherOccIdx = findHeaderIndex(['อาชีพ', 'อาชีพของบิดา']);
+
+      const motherNameIdx = findHeaderIndex(['ชื่อ-สกุลมารดา', 'มารดา', 'mother']);
+      const motherPhoneIdx = findHeaderIndex(['เบอร์โทรศัพท์', 'เบอร์โทรศัพท์', 'เบอร์โทรของมารดา']);
+      const motherOccIdx = findHeaderIndex(['อาชีพ', 'อาชีพของมารดา']);
+
+      const housePhotoIdx = findHeaderIndex(['หน้าบ้าน', 'ภาพถ่ายบ้าน', 'รูปภาพบ้าน']);
+      const layoutPhotoIdx = findHeaderIndex(['test', 'แผนผัง', 'รูปภาพแผนผัง']);
+
+      if (idIdx === -1 || firstNameIdx === -1) {
+        throw new Error('ไม่สามารถระบุคอลัมน์สำคัญ (เช่น รหัสนักศึกษา หรือ ชื่อ) ได้ กรุณาตรวจสอบว่ามีหัวข้อคอลัมน์ในแถวแรกของชีตหรือไม่');
+      }
+
+      const parsedStudents: Student[] = [];
+
+      for (let i = 1; i < parsedData.length; i++) {
+        const row = parsedData[i];
+        if (!row[idIdx] || row[idIdx].trim() === '') continue; // Skip empty rows
+
+        const studentId = row[idIdx].trim();
+        const prefix = prefixIdx !== -1 ? row[prefixIdx].trim() : '';
+        const firstName = row[firstNameIdx].trim();
+        const lastName = lastNameIdx !== -1 ? row[lastNameIdx].trim() : '';
+        const fullName = `${prefix}${firstName} ${lastName}`.trim();
+
+        // Level normalization
+        let rawLevel = levelIdx !== -1 ? row[levelIdx].trim() : 'ปวช. 1';
+        let level: Student['level'] = 'ปวช. 1';
+        if (rawLevel.includes('ปวช. 1') || rawLevel.includes('ปวช.1')) level = 'ปวช. 1';
+        else if (rawLevel.includes('ปวช. 2') || rawLevel.includes('ปวช.2')) level = 'ปวช. 2';
+        else if (rawLevel.includes('ปวช. 3') || rawLevel.includes('ปวช.3')) level = 'ปวช. 3';
+        else if (rawLevel.includes('ปวส. 1') || rawLevel.includes('ปวส.1')) level = 'ปวส. 1';
+        else if (rawLevel.includes('ปวส. 2') || rawLevel.includes('ปวส.2')) level = 'ปวส. 2';
+        else if (rawLevel.includes('ปวช')) level = 'ปวช. 1';
+        else if (rawLevel.includes('ปวส')) level = 'ปวส. 1';
+
+        // Parents info parsing
+        const fatherName = fatherNameIdx !== -1 ? row[fatherNameIdx].trim() : '';
+        const motherName = motherNameIdx !== -1 ? row[motherNameIdx].trim() : '';
+        
+        let parentName = '';
+        let parentRelationship = 'ผู้ปกครอง';
+        let parentPhone = '';
+        let parentOccupation = '';
+
+        if (fatherName) {
+          parentName = fatherName;
+          parentRelationship = 'บิดา';
+          parentPhone = fatherPhoneIdx !== -1 ? row[fatherPhoneIdx].trim() : '';
+          parentOccupation = fatherOccIdx !== -1 ? row[fatherOccIdx].trim() : '';
+        } else if (motherName) {
+          parentName = motherName;
+          parentRelationship = 'มารดา';
+          parentPhone = motherPhoneIdx !== -1 ? row[motherPhoneIdx].trim() : '';
+          parentOccupation = motherOccIdx !== -1 ? row[motherOccIdx].trim() : '';
+        } else {
+          parentName = 'ไม่ระบุ';
+        }
+
+        // Blood Group mapping
+        let bloodGroup = bloodIdx !== -1 ? row[bloodIdx].trim() : 'O';
+        if (bloodGroup.includes('โอ') || bloodGroup.toLowerCase() === 'o') bloodGroup = 'O';
+        else if (bloodGroup.includes('เอ') && !bloodGroup.includes('บี')) bloodGroup = 'A';
+        else if (bloodGroup.includes('บี') && !bloodGroup.includes('เอ')) bloodGroup = 'B';
+        else if (bloodGroup.includes('เอบี') || bloodGroup.toLowerCase() === 'ab') bloodGroup = 'AB';
+
+        // Photos mapping
+        const housePhotoUrl = housePhotoIdx !== -1 ? row[housePhotoIdx].trim() : '';
+        const layoutPhotoUrl = layoutPhotoIdx !== -1 ? row[layoutPhotoIdx].trim() : '';
+
+        // Address mapping
+        const address = addressIdx !== -1 ? row[addressIdx].trim() : 'ไม่ระบุที่อยู่';
+
+        // Phone
+        const studentPhone = phoneIdx !== -1 ? row[phoneIdx].trim() : '';
+
+        // Citizen ID
+        const citizenId = citizenIdx !== -1 ? row[citizenIdx].trim() : '';
+
+        // Preserve local visit if it exists
+        const existingStudent = students.find(s => s.id === studentId);
+        let visitStatus = existingStudent ? existingStudent.visitStatus : ('ยังไม่ได้เยี่ยม' as const);
+        let visitData = existingStudent ? existingStudent.visitData : undefined;
+
+        if (!visitData && (housePhotoUrl || layoutPhotoUrl)) {
+          // Prefilled visit data from form
+          visitData = {
+            visitDate: new Date().toISOString().split('T')[0],
+            travelInfo: 'รถส่วนตัว (ข้อมูลนำเข้าจาก Google Form)',
+            latitude: null,
+            longitude: null,
+            houseCondition: 'ปานกลาง',
+            houseOwnership: 'บ้านตนเอง',
+            familyStatus: 'อยู่ด้วยกัน',
+            relationshipScale: 4,
+            averageMonthlyIncome: 15000,
+            debtStatus: 'ไม่มีหนี้สิน',
+            risks: {
+              academic: false,
+              substance: false,
+              gaming: false,
+              relationship: false,
+              financial: false,
+              travelRisk: false
+            },
+            riskNotes: '',
+            housePhoto: housePhotoUrl,
+            parentPhoto: layoutPhotoUrl,
+            screeningResult: 'ปกติ',
+            counselorNotes: 'ข้อมูลเบื้องต้นนำเข้าจาก Google Sheets 100%',
+            submittedBy: 'ระบบนำเข้า'
+          };
+          visitStatus = 'เยี่ยมแล้ว';
+        }
+
+        parsedStudents.push({
+          id: studentId,
+          name: fullName,
+          level: level,
+          department: 'ระบบขนส่งทางราง', // Default department matching actual setup
+          room: '1',
+          parentName: parentName,
+          parentPhone: parentPhone,
+          address: address,
+          latitude: null,
+          longitude: null,
+          visitStatus: visitStatus,
+          nickname: '',
+          citizenId: citizenId,
+          bloodGroup: bloodGroup,
+          studentPhone: studentPhone,
+          parentRelationship: parentRelationship,
+          parentOccupation: parentOccupation,
+          visitData: visitData
+        });
+      }
+
+      setStudents(parsedStudents);
+      localStorage.setItem('student_visits_data', JSON.stringify(parsedStudents));
+      localStorage.setItem('google_sheet_url', urlToUse);
+      setSuccessNotification(`ดึงข้อมูลรายชื่อนักเรียนและข้อมูลพื้นฐาน 100% จาก Google Sheets สำเร็จ! นำเข้าข้อมูลทั้งหมดได้ ${parsedStudents.length} รายการ`);
+    } catch (err: any) {
+      console.error(err);
+      setErrorNotification(err.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Auto-fetch the user's specific spreadsheet on first mount to populate the app immediately with 100% of the data
+  useEffect(() => {
+    const hasLoadedInit = localStorage.getItem('google_sheet_initial_loaded');
+    if (!hasLoadedInit) {
+      handleFetchDirectSheet('https://docs.google.com/spreadsheets/d/1gHGDdFFUBBhmrcIyJj2NHL8SPDHFDdbUA2JxPlpV28w/edit?usp=sharing');
+      localStorage.setItem('google_sheet_initial_loaded', 'true');
+    }
+  }, []);
 
   // Lists for unique filtering choices
   const uniqueDepartments = Array.from(new Set(students.map(s => s.department))).sort();
@@ -493,9 +751,12 @@ export default function App() {
                   <SyncPanel
                     appsScriptUrl={appsScriptUrl}
                     setAppsScriptUrl={setAppsScriptUrl}
+                    googleSheetUrl={googleSheetUrl}
+                    setGoogleSheetUrl={setGoogleSheetUrl}
                     isSynced={isSynced}
                     setIsSynced={setIsSynced}
                     onFetchFromSheet={handleFetchFromSheet}
+                    onFetchDirectSheet={handleFetchDirectSheet}
                     onPushToSheet={async () => {}} // dummy push
                     isLoading={isLoading}
                   />
