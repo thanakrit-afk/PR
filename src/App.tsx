@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Student, HomeVisitData } from './types';
 import { INITIAL_MOCK_STUDENTS } from './mockData';
 import { SyncPanel } from './components/SyncPanel';

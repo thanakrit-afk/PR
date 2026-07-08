@@ -307,53 +307,143 @@ export const ParentMapPinning: React.FC<ParentMapPinningProps> = ({
     setTimeout(() => setSaveSuccess(false), 5000);
   };
 
+  const [showLocalSystem, setShowLocalSystem] = useState(false);
+  const googleFormLink = "https://docs.google.com/forms/d/107HTXU5yMVOOpzM0PUW-5NSi7dXiQZOMnlAmy7iAwj4/edit";
+  
+  // Convert edit link to view/fill form for iframe embedding
+  const googleFormViewLink = "https://docs.google.com/forms/d/e/1FAIpQLScP_r3CdfN4w8z89uL7q9870t3W6wS8oG-D0t8y-qL6m_f68g/viewform?embedded=true"; // default viewform fallback or we can use the main edit link
+  const iframeSrc = googleFormLink.endsWith('/edit') 
+    ? googleFormLink.replace(/\/edit$/, '/viewform?embedded=true')
+    : googleFormLink;
+
   return (
     <div id="student-parent-root" className="space-y-6">
       
-      {/* NOT LOGGED IN: LOGIN / REGISTER PORTAL */}
-      {!loggedInStudent ? (
-        <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-md overflow-hidden animate-fadeIn my-4">
-          
-          {/* Header */}
-          <div className="bg-slate-900 text-white px-6 py-6 text-center space-y-2">
-            <div className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center mx-auto text-white shadow-xs">
-              <User className="w-6 h-6" />
+      {/* Google Form Integration Hero Section */}
+      <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-3xl border border-indigo-500/20 shadow-xl overflow-hidden animate-fadeIn">
+        <div className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="space-y-3 max-w-2xl text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-xs font-semibold text-indigo-300">
+              <Clipboard className="w-3.5 h-3.5 animate-pulse" />
+              <span>ช่องทางหลักสำหรับการบันทึกข้อมูล</span>
             </div>
-            <h2 className="text-base font-bold tracking-tight">ระบบบันทึกพิกัดและยืนยันข้อมูลบ้านนักศึกษา</h2>
-            <p className="text-xs text-slate-400">กรุณาเข้าสู่ระบบหรือลงทะเบียนใหม่เพื่อกรอกข้อมูลตำแหน่งบ้านของท่าน</p>
+            <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
+              แบบฟอร์มบันทึกข้อมูลเยี่ยมบ้านและคัดกรองนักศึกษา
+            </h2>
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              ให้นักเรียน นักศึกษา และผู้ปกครอง กรอกข้อมูลที่อยู่ พิกัดแผนที่ และสถานะทางครอบครัวผ่านแบบฟอร์ม Google Form ของสถาบันฯ เพื่อความสะดวก รวดเร็ว และถูกต้องในการจัดเก็บข้อมูลของวิทยาลัย
+            </p>
+          </div>
+          
+          <div className="shrink-0 w-full md:w-auto flex flex-col sm:flex-row gap-3">
+            <a
+              href={googleFormLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-brand-500/20 hover:shadow-brand-500/35 hover:-translate-y-0.5 transition-all cursor-pointer text-center"
+            >
+              <ExternalLink className="w-4 h-4" />
+              เปิดกรอกข้อมูลในแท็บใหม่
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Embedded Iframe Container */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden p-4 text-left space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <FileText className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-slate-800">กรอกข้อมูลโดยตรงผ่านหน้าเว็บด้านล่าง</h3>
+              <p className="text-[10px] text-slate-400">ท่านสามารถกรอกข้อมูลให้เสร็จสิ้นในกล่องระบบด้านล่างนี้ได้ทันที</p>
+            </div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={() => setShowLocalSystem(!showLocalSystem)}
+            className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200"
+          >
+            {showLocalSystem ? 'ซ่อนระบบจำลองเดิม' : 'แสดงระบบปักหมุดเดิม (ระบบท้องถิ่น)'}
+          </button>
+        </div>
+
+        {/* The Google Form Iframe */}
+        <div className="relative w-full rounded-2xl border border-slate-150 overflow-hidden bg-slate-50 shadow-inner" style={{ height: '700px' }}>
+          <iframe 
+            src={iframeSrc} 
+            className="w-full h-full border-none"
+            title="Google Form"
+            allow="geolocation"
+          >
+            กำลังโหลดแบบฟอร์ม...
+          </iframe>
+        </div>
+        
+        <div className="flex items-center gap-2 justify-center text-[11px] text-slate-400 font-medium">
+          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span>หากแบบฟอร์มไม่แสดงผลหรือขึ้นข้อผิดพลาด กรุณาคลิกปุ่มสีน้ำเงินด้านบนเพื่อเปิดฟอร์มในหน้าต่างใหม่</span>
+        </div>
+      </div>
+
+      {/* Show Legacy Local System if Toggled */}
+      {showLocalSystem && (
+        <div className="border-t border-dashed border-slate-200 pt-6 space-y-6 animate-fadeIn">
+          <div className="p-4 bg-amber-50 text-amber-900 text-xs rounded-2xl border border-amber-100 flex items-start gap-2 max-w-xl mx-auto text-left">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+            <div>
+              <p className="font-bold mb-0.5">⚠️ แผงระบบทดลองปักหมุดเดิม</p>
+              <p className="text-amber-800/90 leading-relaxed">ข้อมูลด้านล่างนี้เป็นระบบบันทึกแบบจำลองส่วนตัวในเบราว์เซอร์ ซึ่งแยกต่างหากจาก Google Form ด้านบน คุณครูแนะแนวและระบบฐานข้อมูลของสถาบันแนะนำให้ใช้แบบฟอร์ม Google Form เป็นช่องทางหลัก</p>
+            </div>
           </div>
 
-          {/* Toggle Tabs */}
-          <div className="flex border-b border-slate-100 bg-slate-50">
-            <button
-              type="button"
-              onClick={() => { setAuthMode('login'); setAuthError(''); }}
-              className={`flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                authMode === 'login' 
-                  ? 'border-brand-500 text-brand-600 bg-white' 
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <span className="flex items-center justify-center gap-1.5">
-                <Lock className="w-3.5 h-3.5" />
-                เข้าสู่ระบบ (Login)
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAuthMode('register'); setAuthError(''); }}
-              className={`flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                authMode === 'register' 
-                  ? 'border-brand-500 text-brand-600 bg-white' 
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <span className="flex items-center justify-center gap-1.5">
-                <UserPlus className="w-3.5 h-3.5" />
-                ลงทะเบียนนักศึกษาใหม่ (Register)
-              </span>
-            </button>
-          </div>
+          {/* NOT LOGGED IN: LOGIN / REGISTER PORTAL */}
+          {!loggedInStudent ? (
+            <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-md overflow-hidden animate-fadeIn my-4">
+              
+              {/* Header */}
+              <div className="bg-slate-900 text-white px-6 py-6 text-center space-y-2">
+                <div className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center mx-auto text-white shadow-xs">
+                  <User className="w-6 h-6" />
+                </div>
+                <h2 className="text-base font-bold tracking-tight">ระบบบันทึกพิกัดและยืนยันข้อมูลบ้านนักศึกษา (ระบบจำลอง)</h2>
+                <p className="text-xs text-slate-400">กรุณาเข้าสู่ระบบหรือลงทะเบียนใหม่เพื่อกรอกข้อมูลตำแหน่งบ้านของท่าน</p>
+              </div>
+    
+              {/* Toggle Tabs */}
+              <div className="flex border-b border-slate-100 bg-slate-50">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                  className={`flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                    authMode === 'login' 
+                      ? 'border-brand-500 text-brand-600 bg-white' 
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5" />
+                    เข้าสู่ระบบ (Login)
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                  className={`flex-1 py-3 text-center text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                    authMode === 'register' 
+                      ? 'border-brand-500 text-brand-600 bg-white' 
+                      : 'border-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    <UserPlus className="w-3.5 h-3.5" />
+                    ลงทะเบียนนักศึกษาใหม่ (Register)
+                  </span>
+                </button>
+              </div>
 
           {/* Form Content */}
           <div className="p-6">
@@ -1101,7 +1191,8 @@ export const ParentMapPinning: React.FC<ParentMapPinningProps> = ({
 
         </div>
       )}
-
+        </div>
+      )}
     </div>
   );
 };
