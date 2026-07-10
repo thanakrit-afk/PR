@@ -104,7 +104,19 @@ export const SyncPanel: React.FC<SyncPanelProps> = ({
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {googleSheetUrl && (
+            <a
+              href={googleSheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              id="sync-panel-view-sheet-btn"
+              className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100 transition-all cursor-pointer shadow-2xs"
+            >
+              <Database className="w-3 h-3 text-emerald-600" />
+              เปิดดู Google Sheet ↗
+            </a>
+          )}
           {isSynced ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
               <Wifi className="w-3.5 h-3.5" />

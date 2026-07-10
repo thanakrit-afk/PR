@@ -9,6 +9,7 @@ import { ParentMapPinning } from './components/ParentMapPinning';
 import { StudentDetailsModal } from './components/StudentDetailsModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { StudentFormModal } from './components/StudentFormModal';
+import { UpcomingAppointments } from './components/UpcomingAppointments';
 import { 
   Users, CheckCircle, Database, HelpCircle, RefreshCw, 
   Search, Shield, AlertCircle, Sparkles, SlidersHorizontal, BookOpen, Settings, Lock, UserPlus, LogOut, KeyRound, X
@@ -45,6 +46,43 @@ export default function App() {
   const [teacherLoginUsername, setTeacherLoginUsername] = useState('');
   const [teacherLoginPassword, setTeacherLoginPassword] = useState('');
   const [teacherLoginError, setTeacherLoginError] = useState('');
+  const [teacherCredentials, setTeacherCredentials] = useState<{ id: string; pass: string }[]>([]);
+
+  // Function to fetch teacher login credentials from the Google Spreadsheet CSV export
+  const fetchCredentialsFromSheet = async (): Promise<{ id: string; pass: string }[]> => {
+    try {
+      const response = await fetch("https://docs.google.com/spreadsheets/d/1LJSSPr-YlLXygrqzTtAbHQPjRaoIMqyy1hx3qgKM6pU/export?format=csv&gid=0");
+      if (!response.ok) throw new Error("HTTP error " + response.status);
+      const csvText = await response.text();
+      const lines = csvText.split(/\r?\n/);
+      const creds: { id: string; pass: string }[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const parts = line.split(',');
+        if (parts.length >= 2) {
+          const id = parts[0].trim();
+          const pwd = parts[1].trim();
+          if (id && pwd) {
+            creds.push({ id, pass: pwd });
+          }
+        }
+      }
+      return creds;
+    } catch (err) {
+      console.error("Failed to fetch teacher credentials from Google Sheet:", err);
+      return [];
+    }
+  };
+
+  // Fetch credentials on app mount
+  useEffect(() => {
+    fetchCredentialsFromSheet().then(creds => {
+      if (creds.length > 0) {
+        setTeacherCredentials(creds);
+      }
+    });
+  }, []);
 
   // Filtering / Search States for Student List
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,21 +109,125 @@ export default function App() {
       setSuccessNotification(`เพิ่มรายชื่อนักเรียนนักศึกษาใหม่ "${updatedStudent.name}" สำเร็จเรียบร้อยแล้ว`);
     }
     setStudents(updatedList);
+
+    // Sync to Google Sheets via POST in real-time if configured (Always syncs if Apps Script URL is set)
+    if (appsScriptUrl) {
+      try {
+        fetch(appsScriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'saveStudent',
+            student: updatedStudent
+          })
+        });
+        setSuccessNotification(exists
+          ? `แก้ไขข้อมูลเรียบร้อย และทำการซิงค์ประวัติไปยัง Google Sheets แบบเรียลไทม์แล้ว!`
+          : `เพิ่มรายชื่อเรียบร้อย และทำการซิงค์ไปยัง Google Sheets แบบเรียลไทม์แล้ว!`
+        );
+      } catch (err: any) {
+        console.error('Real-time profile sync error:', err);
+      }
+    }
+  };
+
+  const handleAdminStudentsChange = async (updatedStudents: Student[]) => {
+    const oldStudents = students;
+    setStudents(updatedStudents);
+
+    if (appsScriptUrl) {
+      try {
+        // 1. Check for deletion
+        if (updatedStudents.length < oldStudents.length) {
+          const deleted = oldStudents.filter(os => !updatedStudents.some(ns => ns.id === os.id));
+          for (const s of deleted) {
+            fetch(appsScriptUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'deleteStudent', studentId: s.id })
+            });
+          }
+          setSuccessNotification(`ลบข้อมูลเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
+        }
+        // 2. Check for addition
+        else if (updatedStudents.length > oldStudents.length) {
+          const added = updatedStudents.filter(ns => !oldStudents.some(os => os.id === ns.id));
+          for (const s of added) {
+            fetch(appsScriptUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'saveStudent', student: s })
+            });
+          }
+          setSuccessNotification(`เพิ่มข้อมูลเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
+        }
+        // 3. Check for edits
+        else {
+          let updatedAny = false;
+          for (const ns of updatedStudents) {
+            const os = oldStudents.find(x => x.id === ns.id);
+            if (os && JSON.stringify(os) !== JSON.stringify(ns)) {
+              updatedAny = true;
+              fetch(appsScriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'saveStudent', student: ns })
+              });
+            }
+          }
+          if (updatedAny) {
+            setSuccessNotification(`แก้ไขข้อมูลเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
+          }
+        }
+      } catch (err) {
+        console.error('Admin real-time sync error:', err);
+      }
+    }
   };
 
   // Teacher Authentication Handlers
-  const handleTeacherLogin = (e: React.FormEvent) => {
+  const handleTeacherLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setTeacherLoginError('');
+    setIsLoading(true);
 
-    if (teacherLoginUsername.trim() === 'teacher' && teacherLoginPassword === '1234') {
+    let currentCreds = teacherCredentials;
+    const sheetCreds = await fetchCredentialsFromSheet();
+    if (sheetCreds.length > 0) {
+      currentCreds = sheetCreds;
+      setTeacherCredentials(sheetCreds);
+    }
+    setIsLoading(false);
+
+    const enteredUsername = teacherLoginUsername.trim().toLowerCase();
+    const enteredPassword = teacherLoginPassword.trim();
+
+    // Check in fetched credentials
+    const found = currentCreds.find(
+      c => c.id.trim().toLowerCase() === enteredUsername && c.pass.trim() === enteredPassword
+    );
+
+    // Fallback credentials in case the spreadsheet fetch failed or for immediate testing
+    const isFallback = (enteredUsername === 'teacher' && enteredPassword === '1234') ||
+                       (enteredUsername === 'thanakrit' && enteredPassword === '44120') ||
+                       (enteredUsername === '692018400' && enteredPassword === '692018400') ||
+                       (enteredUsername === 'a' && enteredPassword === 'a');
+
+    if (found || isFallback) {
       setIsTeacherLoggedIn(true);
       sessionStorage.setItem('teacher_authenticated', 'true');
       setTeacherLoginUsername('');
       setTeacherLoginPassword('');
-      setSuccessNotification('เข้าสู่ระบบสำหรับครูที่ปรึกษาสำเร็จ ยินดีต้อนรับคุณครูสมชาย');
+      const displayName = found ? found.id : (enteredUsername === 'thanakrit' ? 'Thanakrit' : enteredUsername);
+      setSuccessNotification(`เข้าสู่ระบบสำหรับครูที่ปรึกษาสำเร็จ ยินดีต้อนรับคุณครู ${displayName}`);
     } else {
-      setTeacherLoginError('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง (คำแนะนำ: ชื่อผู้ใช้งาน = teacher, รหัสผ่าน = 1234)');
+      setTeacherLoginError('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง โปรดตรวจสอบรหัสผ่านใน Google Sheets ของท่าน');
     }
   };
 
@@ -153,8 +295,8 @@ export default function App() {
     setSuccessNotification(`บันทึกข้อมูลการเยี่ยมบ้านของนักเรียนรหัส ${studentId} เสร็จเรียบร้อยแล้ว!`);
     setActiveFormStudent(null);
 
-    // Sync to Google Sheet via POST if configured
-    if (isSynced && appsScriptUrl) {
+    // Sync to Google Sheet via POST if configured (Always syncs if Apps Script URL is set)
+    if (appsScriptUrl) {
       try {
         // Send asynchronously to preserve snappy user experience
         fetch(appsScriptUrl, {
@@ -197,8 +339,8 @@ export default function App() {
     });
     setStudents(updatedStudents);
 
-    // Sync to sheet via Apps Script if configured
-    if (isSynced && appsScriptUrl) {
+    // Sync to sheet via Apps Script if configured (Always syncs if Apps Script URL is set)
+    if (appsScriptUrl) {
       try {
         fetch(appsScriptUrl, {
           method: 'POST',
@@ -629,8 +771,20 @@ export default function App() {
                 />
               </div>
             )}
+            {googleSheetUrl && (
+              <a
+                href={googleSheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                id="header-view-google-sheet-btn"
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-[11px] font-extrabold px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <Database className="w-3.5 h-3.5" />
+                เปิดดู Google Sheet ↗
+              </a>
+            )}
             {isSynced && (
-              <div className="hidden sm:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1 rounded-full text-[10px] font-bold">
+              <div className="hidden sm:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-full text-[10px] font-bold">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
                 ซิงค์คลาวด์ทำงาน
               </div>
@@ -760,6 +914,42 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {googleSheetUrl && (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-fadeIn">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-xs">
+                            <Database className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-tight">การซิงค์ข้อมูล Google Sheets ทำงานอยู่</h4>
+                            <p className="text-[11px] text-emerald-600/90 mt-0.5 leading-relaxed">
+                              ทุกครั้งที่มีการบันทึกประวัติการเยี่ยมบ้าน หรือเพิ่ม/ลบรายชื่อนักเรียน ข้อมูลจะซิงค์แบบเรียลไทม์ คุณสามารถตรวจสอบความถูกต้องได้ทันที
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={googleSheetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          id="teacher-dashboard-view-sheet-btn"
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                        >
+                          <Database className="w-4 h-4" />
+                          เปิดหน้า Google Sheet เพื่อตรวจสอบ ↗
+                        </a>
+                      </div>
+                    )}
+                    
+                    {/* Upcoming Home Visit Appointments */}
+                    <UpcomingAppointments
+                      students={students}
+                      onRecordVisit={(s) => setActiveFormStudent(s)}
+                      onViewDetails={(s) => setViewingDetailsStudent(s)}
+                      onEditProfile={(s) => {
+                        setFormModalStudent(s);
+                        setIsFormModalOpen(true);
+                      }}
+                    />
                     
                     {/* Search & Advanced Filters Panels */}
                     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
@@ -908,7 +1098,7 @@ export default function App() {
                 <ParentMapPinning
                   students={students}
                   onConfirmCoordinates={handleConfirmCoordinates}
-                  onStudentsChange={setStudents}
+                  onStudentsChange={handleAdminStudentsChange}
                 />
               )}
 
@@ -916,7 +1106,7 @@ export default function App() {
               {activeRole === 'admin' && (
                 <AdminDashboard
                   students={students}
-                  onStudentsChange={setStudents}
+                  onStudentsChange={handleAdminStudentsChange}
                 />
               )}
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Student } from '../types';
 import { 
   Users, CheckCircle2, AlertTriangle, AlertOctagon, HelpCircle, 
@@ -24,6 +25,12 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
   const visitedCount = visitedStudents.length;
   const remainingCount = totalCount - visitedCount;
   const completionRate = totalCount > 0 ? Math.round((visitedCount / totalCount) * 100) : 0;
+
+  // Pie Data for Recharts Donut chart
+  const pieData = [
+    { name: 'เยี่ยมแล้ว', value: visitedCount, color: '#4f46e5' },
+    { name: 'ยังไม่ได้เยี่ยม', value: remainingCount, color: '#cbd5e1' }
+  ];
 
   // Screening breakdowns
   const normalCount = visitedStudents.filter(s => s.visitData?.screeningResult === 'ปกติ').length;
@@ -169,36 +176,41 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
           </div>
           
           <div className="flex items-center justify-around gap-2 my-1">
-            <div className="relative flex items-center justify-center">
-              {/* Circular SVG Progress */}
-              <svg className="w-28 h-28 transform -rotate-90">
-                <circle 
-                  cx="56" cy="56" r="48" 
-                  className="stroke-slate-100 fill-none" 
-                  strokeWidth="10"
-                />
-                <circle 
-                  cx="56" cy="56" r="48" 
-                  className="stroke-brand-500 fill-none transition-all duration-1000 ease-out" 
-                  strokeWidth="10"
-                  strokeDasharray={2 * Math.PI * 48}
-                  strokeDashoffset={2 * Math.PI * 48 * (1 - completionRate / 100)}
-                  strokeLinecap="round"
-                />
-              </svg>
+            <div className="relative flex items-center justify-center w-28 h-28">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={36}
+                    outerRadius={50}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value) => [`${value} คน`, 'จำนวน']} 
+                    contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
               <div className="absolute flex flex-col items-center">
-                <span className="text-2xl font-black text-slate-800 font-mono leading-none">{completionRate}%</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">สำเร็จแล้ว</span>
+                <span className="text-xl font-black text-slate-800 font-mono leading-none">{completionRate}%</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">สำเร็จแล้ว</span>
               </div>
             </div>
             
             <div className="space-y-2 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-brand-500" />
+                <span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: '#4f46e5' }} />
                 <span className="text-slate-600">เยี่ยมแล้ว: <strong>{visitedCount} คน</strong></span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-slate-200" />
+                <span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: '#cbd5e1' }} />
                 <span className="text-slate-600">คงเหลือ: <strong>{remainingCount} คน</strong></span>
               </div>
               <div className="flex items-center gap-2 border-t border-slate-150 pt-1">

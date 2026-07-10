@@ -17,6 +17,8 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   const d = student.visitData;
   const isVisited = student.visitStatus === 'เยี่ยมแล้ว';
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const lat = student.latitude || student.visitData?.latitude;
+  const lng = student.longitude || student.visitData?.longitude;
 
   const handlePrint = () => {
     // Elegant printing of just this student details modal!
@@ -133,6 +135,17 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                     <Calendar className="w-4 h-4 text-slate-400" />
                     <span>วันที่ลงเยี่ยมบ้าน: {d.visitDate}</span>
                   </div>
+                )}
+                {lat && lng && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer text-center"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    เปิด Google Maps
+                  </a>
                 )}
               </div>
 

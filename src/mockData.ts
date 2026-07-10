@@ -58,6 +58,7 @@ export const INITIAL_MOCK_STUDENTS: Student[] = [
     latitude: 16.4820,
     longitude: 102.8412,
     visitStatus: "ยังไม่ได้เยี่ยม",
+    appointmentDate: "2026-07-12",
     nickname: "วิว",
     citizenId: "1400109876543",
     bloodGroup: "O",
@@ -154,7 +155,8 @@ export const INITIAL_MOCK_STUDENTS: Student[] = [
     address: "111 ต.โคกสี อ.เมือง จ.ขอนแก่น",
     latitude: 16.4710,
     longitude: 102.9150,
-    visitStatus: "ยังไม่ได้เยี่ยม"
+    visitStatus: "ยังไม่ได้เยี่ยม",
+    appointmentDate: "2026-07-15"
   },
   {
     id: "6230901024",
@@ -206,7 +208,8 @@ export const INITIAL_MOCK_STUDENTS: Student[] = [
     address: "56 ต.ดอนช้าง อ.เมือง จ.ขอนแก่น",
     latitude: 16.3540,
     longitude: 102.7540,
-    visitStatus: "ยังไม่ได้เยี่ยม"
+    visitStatus: "ยังไม่ได้เยี่ยม",
+    appointmentDate: "2026-07-18"
   },
   {
     id: "6420501004",

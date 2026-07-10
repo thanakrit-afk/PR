@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student } from '../types';
-import { MapPin, Phone, User, CheckCircle2, AlertTriangle, XCircle, FileText, ChevronRight, Edit3 } from 'lucide-react';
+import { MapPin, Phone, User, CheckCircle2, AlertTriangle, XCircle, FileText, ChevronRight, Edit3, Calendar } from 'lucide-react';
 
 interface StudentCardProps {
   student: Student;
@@ -109,6 +109,13 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                 ที่อยู่: {student.address}
               </span>
             </div>
+
+            {student.appointmentDate && !isVisited && (
+              <div className="flex items-center gap-2 bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1.5 rounded-lg text-xs font-bold animate-pulse mt-1">
+                <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span>นัดหมายเยี่ยมบ้าน: {student.appointmentDate}</span>
+              </div>
+            )}
           </div>
         </div>
 

@@ -33,6 +33,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [formStudentPhone, setFormStudentPhone] = useState('');
   const [formParentRelationship, setFormParentRelationship] = useState('บิดา');
   const [formParentOccupation, setFormParentOccupation] = useState('');
+  const [formAppointmentDate, setFormAppointmentDate] = useState('');
   const [formError, setFormError] = useState('');
 
   // Additional form states for coordinates and comprehensive home visit details
@@ -79,6 +80,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setFormStudentPhone(student.studentPhone || '');
       setFormParentRelationship(student.parentRelationship || 'บิดา');
       setFormParentOccupation(student.parentOccupation || '');
+      setFormAppointmentDate(student.appointmentDate || '');
       
       // GPS and Visit status initialization
       setFormLatitude(student.latitude);
@@ -125,6 +127,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setFormStudentPhone('');
       setFormParentRelationship('บิดา');
       setFormParentOccupation('');
+      setFormAppointmentDate('');
       
       // Defaults for adding student
       setFormLatitude(16.4396);
@@ -382,7 +385,8 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       parentRelationship: formParentRelationship,
       parentOccupation: formParentOccupation.trim(),
       visitData: visitData,
-      password: student?.password
+      password: student?.password,
+      appointmentDate: formAppointmentDate || undefined
     };
 
     onSave(studentData);
@@ -799,6 +803,32 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 </div>
               </div>
 
+              {/* Appointment Scheduling for Unvisited */}
+              {formVisitStatus === 'ยังไม่ได้เยี่ยม' && (
+                <div className="bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100/80 space-y-3 animate-fadeIn text-left">
+                  <div className="border-b border-indigo-100/60 pb-1.5">
+                    <span className="text-[11px] font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-indigo-600" />
+                      นัดหมายวันเยี่ยมบ้านล่วงหน้า (ถ้ามี)
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      ระบุวันนัดหมายเยี่ยมบ้านล่วงหน้า
+                    </label>
+                    <input
+                      type="date"
+                      value={formAppointmentDate}
+                      onChange={(e) => setFormAppointmentDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      * วันที่นัดหมายนี้จะนำไปแสดงในรายการ "การนัดหมายเยี่ยมบ้านที่จะถึงนี้" เพื่อแจ้งเตือนและจัดเตรียมแผนการเดินทางของคุณครู
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Dynamic visit inputs if Visit Status is 'เยี่ยมแล้ว' */}
               {formVisitStatus === 'เยี่ยมแล้ว' && (
                 <div className="bg-emerald-50/40 p-4 rounded-2xl border border-emerald-100/80 space-y-4 animate-fadeIn text-left">
@@ -964,6 +994,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
             </button>
             <button
               type="submit"
+              id="student-form-submit-btn"
               className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors flex items-center gap-1 shadow-xs"
             >
               <Save className="w-3.5 h-3.5" />

@@ -134,6 +134,37 @@ function doPost(e) {
       updateStudentCoordinatesInSheet(studentsSheet, studentId, latitude, longitude);
       return jsonResponse({ success: true, message: "อัปเดตพิกัดบ้านนักเรียนเรียบร้อยแล้ว" });
     }
+
+    if (action === "saveStudent") {
+      const { student } = payload;
+      const studentsSheet = sheet.getSheetByName(SHEET_STUDENTS);
+      deleteExistingRow(studentsSheet, "id", student.id);
+      
+      const newRow = [
+        student.id,
+        student.name,
+        student.level,
+        student.department,
+        student.room,
+        student.parentName,
+        student.parentPhone,
+        student.address,
+        student.latitude || "",
+        student.longitude || "",
+        student.appointmentDate || ""
+      ];
+      
+      studentsSheet.appendRow(newRow);
+      return jsonResponse({ success: true, message: "บันทึกข้อมูลประวัตินักศึกษาสำเร็จ" });
+    }
+
+    if (action === "deleteStudent") {
+      const studentsSheet = sheet.getSheetByName(SHEET_STUDENTS);
+      const visitsSheet = sheet.getSheetByName(SHEET_VISITS);
+      deleteExistingRow(studentsSheet, "id", studentId);
+      deleteExistingRow(visitsSheet, "studentId", studentId);
+      return jsonResponse({ success: true, message: "ลบข้อมูลประวัตินักศึกษาเรียบร้อยแล้ว" });
+    }
     
     return jsonResponse({ success: false, error: "Action not recognized" });
   } catch (error) {
@@ -149,17 +180,17 @@ function initSpreadsheet() {
   let studentsSheet = ss.getSheetByName(SHEET_STUDENTS);
   if (!studentsSheet) {
     studentsSheet = ss.insertSheet(SHEET_STUDENTS);
-    const headers = ["id", "name", "level", "department", "room", "parentName", "parentPhone", "address", "latitude", "longitude"];
+    const headers = ["id", "name", "level", "department", "room", "parentName", "parentPhone", "address", "latitude", "longitude", "appointmentDate"];
     studentsSheet.appendRow(headers);
     
     // Add some sample students for vocational school (อาชีวศึกษา)
     const sampleStudents = [
-      ["6620901001", "นายสมชาย ใจดี", "ปวช. 1", "เทคโนโลยีสารสนเทศ", "1", "นายสมบูรณ์ ใจดี", "081-234-5678", "12/3 ถ.มิตรภาพ อ.เมือง จ.ขอนแก่น", 16.4322, 102.8230],
-      ["6620901002", "นางสาววิภาวดี เรียนเก่ง", "ปวช. 1", "เทคโนโลยีสารสนเทศ", "1", "นางรุ่งเรือง เรียนเก่ง", "089-876-5432", "45 หมู่ 5 ต.ศิลา อ.เมือง จ.ขอนแก่น", 16.4820, 102.8412],
-      ["6520201005", "นายกิตติพงษ์ ยอดขยัน", "ปวช. 2", "ช่างยนต์", "2", "นายพงษ์ ยอดขยัน", "085-111-2222", "99/1 ต.ในเมือง อ.เมือง จ.ขอนแก่น", 16.4150, 102.8120],
-      ["6420304012", "นางสาวมนัสวี แสนสุข", "ปวช. 3", "การบัญชี", "1", "นางดวงตา แสนสุข", "086-333-4444", "234 หมู่ 12 ต.บ้านเป็ด อ.เมือง จ.ขอนแก่น", 16.4385, 102.7845],
-      ["6330901001", "นายธนกร วงศ์สมบูรณ์", "ปวส. 1", "คอมพิวเตอร์ธุรกิจ", "1", "นายธีรวัฒน์ วงศ์สมบูรณ์", "082-555-6666", "111 ต.โคกสี อ.เมือง จ.ขอนแก่น", 16.4710, 102.9150],
-      ["6230901024", "นางสาวอนงค์นาฏ แก้วตา", "ปวส. 2", "คอมพิวเตอร์ธุรกิจ", "2", "นางกานดา แก้วตา", "083-777-8888", "88/2 หมู่ 3 ต.บึงเนียม อ.เมือง จ.ขอนแก่น", 16.4605, 102.9402]
+      ["6620901001", "นายสมชาย ใจดี", "ปวช. 1", "เทคโนโลยีสารสนเทศ", "1", "นายสมบูรณ์ ใจดี", "081-234-5678", "12/3 ถ.มิตรภาพ อ.เมือง จ.ขอนแก่น", 16.4322, 102.8230, "2026-07-10"],
+      ["6620901002", "นางสาววิภาวดี เรียนเก่ง", "ปวช. 1", "เทคโนโลยีสารสนเทศ", "1", "นางรุ่งเรือง เรียนเก่ง", "089-876-5432", "45 หมู่ 5 ต.ศิลา อ.เมือง จ.ขอนแก่น", 16.4820, 102.8412, ""],
+      ["6520201005", "นายกิตติพงษ์ ยอดขยัน", "ปวช. 2", "ช่างยนต์", "2", "นายพงษ์ ยอดขยัน", "085-111-2222", "99/1 ต.ในเมือง อ.เมือง จ.ขอนแก่น", 16.4150, 102.8120, "2026-07-11"],
+      ["6420304012", "นางสาวมนัสวี แสนสุข", "ปวช. 3", "การบัญชี", "1", "นางดวงตา แสนสุข", "086-333-4444", "234 หมู่ 12 ต.บ้านเป็ด อ.เมือง จ.ขอนแก่น", 16.4385, 102.7845, ""],
+      ["6330901001", "นายธนกร วงศ์สมบูรณ์", "ปวส. 1", "คอมพิวเตอร์ธุรกิจ", "1", "นายธีรวัฒน์ วงศ์สมบูรณ์", "082-555-6666", "111 ต.โคกสี อ.เมือง จ.ขอนแก่น", 16.4710, 102.9150, "2026-07-15"],
+      ["6230901024", "นางสาวอนงค์นาฏ แก้วตา", "ปวส. 2", "คอมพิวเตอร์ธุรกิจ", "2", "นางกานดา แก้วตา", "083-777-8888", "88/2 หมู่ 3 ต.บึงเนียม อ.เมือง จ.ขอนแก่น", 16.4605, 102.9402, ""]
     ];
     sampleStudents.forEach(row => studentsSheet.appendRow(row));
   }
