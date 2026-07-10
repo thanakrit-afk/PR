@@ -17,10 +17,34 @@ import {
 
 export default function App() {
   // Primary States
-  const [students, setStudents] = useState<Student[]>(() => {
+  const [rawStudents, setRawStudents] = useState<Student[]>(() => {
     const local = localStorage.getItem('student_visits_data');
-    return local ? JSON.parse(local) : INITIAL_MOCK_STUDENTS;
+    const list = local ? JSON.parse(local) : INITIAL_MOCK_STUDENTS;
+    const seen = new Set<string>();
+    return list.filter((s: Student) => {
+      if (!s.id) return false;
+      const normalized = s.id.trim().toLowerCase();
+      if (seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    });
   });
+
+  const setStudents = (val: Student[] | ((prev: Student[]) => Student[])) => {
+    setRawStudents(prev => {
+      const newList = typeof val === 'function' ? val(prev) : val;
+      const seen = new Set<string>();
+      return newList.filter(s => {
+        if (!s.id) return false;
+        const normalized = s.id.trim().toLowerCase();
+        if (seen.has(normalized)) return false;
+        seen.add(normalized);
+        return true;
+      });
+    });
+  };
+
+  const students = rawStudents;
 
   const [appsScriptUrl, setAppsScriptUrl] = useState<string>(() => {
     return localStorage.getItem('apps_script_url') || '';
@@ -140,50 +164,57 @@ export default function App() {
 
     if (appsScriptUrl) {
       try {
-        // 1. Check for deletion
-        if (updatedStudents.length < oldStudents.length) {
-          const deleted = oldStudents.filter(os => !updatedStudents.some(ns => ns.id === os.id));
-          for (const s of deleted) {
-            fetch(appsScriptUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'deleteStudent', studentId: s.id })
-            });
-          }
+        // Identify deleted students (IDs in old but not in new)
+        const deleted = oldStudents.filter(os => !updatedStudents.some(ns => ns.id.toLowerCase() === os.id.toLowerCase()));
+        
+        // Identify added students (IDs in new but not in old)
+        const added = updatedStudents.filter(ns => !oldStudents.some(os => os.id.toLowerCase() === ns.id.toLowerCase()));
+        
+        // Identify edited students (same ID, but different properties)
+        const edited = updatedStudents.filter(ns => {
+          const os = oldStudents.find(x => x.id.toLowerCase() === ns.id.toLowerCase());
+          return os && JSON.stringify(os) !== JSON.stringify(ns);
+        });
+
+        // 1. Sync deletions (and old IDs of edited-ID students)
+        for (const s of deleted) {
+          fetch(appsScriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'deleteStudent', studentId: s.id })
+          });
+        }
+
+        // 2. Sync additions/saves
+        for (const s of added) {
+          fetch(appsScriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'saveStudent', student: s })
+          });
+        }
+
+        // 3. Sync edits
+        for (const s of edited) {
+          fetch(appsScriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'saveStudent', student: s })
+          });
+        }
+
+        // Set feedback message
+        if (deleted.length > 0 && added.length > 0 && deleted.length === added.length) {
+          setSuccessNotification(`แก้ไขรหัสนักศึกษาและทำการซิงค์ข้อมูลใหม่ไปยัง Google Sheets เรียบร้อยแล้ว!`);
+        } else if (deleted.length > 0) {
           setSuccessNotification(`ลบข้อมูลเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
-        }
-        // 2. Check for addition
-        else if (updatedStudents.length > oldStudents.length) {
-          const added = updatedStudents.filter(ns => !oldStudents.some(os => os.id === ns.id));
-          for (const s of added) {
-            fetch(appsScriptUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'saveStudent', student: s })
-            });
-          }
-          setSuccessNotification(`เพิ่มข้อมูลเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
-        }
-        // 3. Check for edits
-        else {
-          let updatedAny = false;
-          for (const ns of updatedStudents) {
-            const os = oldStudents.find(x => x.id === ns.id);
-            if (os && JSON.stringify(os) !== JSON.stringify(ns)) {
-              updatedAny = true;
-              fetch(appsScriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'saveStudent', student: ns })
-              });
-            }
-          }
-          if (updatedAny) {
-            setSuccessNotification(`แก้ไขข้อมูลเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
-          }
+        } else if (added.length > 0) {
+          setSuccessNotification(`เพิ่มรายชื่อเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
+        } else if (edited.length > 0) {
+          setSuccessNotification(`แก้ไขข้อมูลเรียบร้อย และทำการซิงค์ไปยัง Google Sheets เรียบร้อยแล้ว!`);
         }
       } catch (err) {
         console.error('Admin real-time sync error:', err);

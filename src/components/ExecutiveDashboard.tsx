@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Student } from '../types';
 import { 
   Users, CheckCircle2, AlertTriangle, AlertOctagon, HelpCircle, 
-  Printer, FileSpreadsheet, Filter, Search, Phone, MapPin, Eye, ExternalLink 
+  Printer, FileSpreadsheet, Filter, Search, Phone, MapPin, Eye, ExternalLink,
+  TrendingUp
 } from 'lucide-react';
 
 interface ExecutiveDashboardProps {
@@ -31,6 +32,59 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
     { name: 'เยี่ยมแล้ว', value: visitedCount, color: '#4f46e5' },
     { name: 'ยังไม่ได้เยี่ยม', value: remainingCount, color: '#cbd5e1' }
   ];
+
+  // Dynamic cumulative monthly progress data for the Line Chart
+  const THAI_MONTH_ABBRS = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+  ];
+  const ACADEMIC_MONTH_ORDER = [4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3]; // May to April
+  const semesterMonths = [4, 5, 6, 7, 8, 9]; // May to Oct
+  
+  const visitsByMonth = new Array(12).fill(0);
+  visitedStudents.forEach(s => {
+    if (s.visitData?.visitDate) {
+      const parts = s.visitData.visitDate.split('-');
+      if (parts.length >= 2) {
+        const monthNum = parseInt(parts[1], 10);
+        if (!isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
+          visitsByMonth[monthNum - 1] += 1;
+        }
+      } else {
+        const d = new Date(s.visitData.visitDate);
+        if (!isNaN(d.getTime())) {
+          visitsByMonth[d.getMonth()] += 1;
+        }
+      }
+    }
+  });
+
+  const hasVisitsOutsideSem1 = visitedStudents.some(s => {
+    if (s.visitData?.visitDate) {
+      const parts = s.visitData.visitDate.split('-');
+      if (parts.length >= 2) {
+        const monthNum = parseInt(parts[1], 10);
+        if (!isNaN(monthNum)) {
+          const idx = monthNum - 1;
+          return idx < 4 || idx > 9; // Outside May - Oct
+        }
+      }
+    }
+    return false;
+  });
+
+  const monthsToDisplay = hasVisitsOutsideSem1 ? ACADEMIC_MONTH_ORDER : semesterMonths;
+  
+  let cumulativeSum = 0;
+  const lineChartData = monthsToDisplay.map(monthIndex => {
+    const count = visitsByMonth[monthIndex];
+    cumulativeSum += count;
+    return {
+      name: THAI_MONTH_ABBRS[monthIndex],
+      'เยี่ยมในเดือน': count,
+      'ยอดสะสม': cumulativeSum
+    };
+  });
 
   // Screening breakdowns
   const normalCount = visitedStudents.filter(s => s.visitData?.screeningResult === 'ปกติ').length;
@@ -271,6 +325,87 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
           </p>
         </div>
 
+      </div>
+
+      {/* 2.5 Cumulative Progress Line Chart */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">สรุปความก้าวหน้าการเยี่ยมบ้านสะสมรายเดือน</h3>
+              <p className="text-xs text-slate-400 mt-0.5">แสดงจำนวนนักเรียนที่ได้รับการเยี่ยมบ้านจริงสะสมเทียบกับรายเดือนตลอดปีการศึกษา</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 self-end sm:self-auto bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600">
+            <span>สะสมทั้งหมด: </span>
+            <span className="font-bold text-brand-600 font-mono text-sm">{visitedCount} คน</span>
+          </div>
+        </div>
+
+        <div className="h-[300px] w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={lineChartData}
+              margin={{ top: 15, right: 15, left: -20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fill: '#64748b', fontSize: 11 }}
+                axisLine={{ stroke: '#cbd5e1' }}
+                tickLine={false}
+              />
+              <YAxis 
+                tick={{ fill: '#64748b', fontSize: 11 }}
+                axisLine={{ stroke: '#cbd5e1' }}
+                tickLine={false}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  fontSize: '11px', 
+                  borderRadius: '12px',
+                  borderColor: '#e2e8f0',
+                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                  fontFamily: 'Inter, system-ui, sans-serif'
+                }}
+                formatter={(value: any, name: string) => [`${value} คน`, name]}
+              />
+              <Legend 
+                wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                iconType="circle"
+              />
+              <Line 
+                name="ยอดเยี่ยมสะสม (คน)" 
+                type="monotone" 
+                dataKey="ยอดสะสม" 
+                stroke="#4f46e5" 
+                strokeWidth={3.5}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+                dot={{ r: 4, strokeWidth: 2.5, fill: '#fff', stroke: '#4f46e5' }}
+              />
+              <Line 
+                name="เยี่ยมในเดือนนั้น (คน)" 
+                type="monotone" 
+                dataKey="เยี่ยมในเดือน" 
+                stroke="#94a3b8" 
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#94a3b8' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-100 flex items-start gap-2.5">
+          <span className="text-brand-500 font-extrabold text-xs">💡 คำอธิบาย:</span>
+          <p className="text-[11px] text-slate-500 leading-normal">
+            กราฟเส้นแสดงทิศทางการทำงานของวิทยาลัย เส้นทึบสีน้ำเงิน <strong>ยอดเยี่ยมสะสม</strong> จะแสดงการเติบโตขึ้นเรื่อยๆ เมื่อเวลาผ่านไปตามเป้าหมาย 100% ตลอดทั้งเทอม ส่วนเส้นประสีเทา <strong>เยี่ยมในเดือนนั้น</strong> แสดงอัตรากำลังความเข้มข้นของการทำงานจริงในแต่ละช่วงเวลา
+          </p>
+        </div>
       </div>
 
       {/* 3. Department Progress & PDF Filter Panel */}

@@ -1,9 +1,12 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Student } from '../types';
 import { 
   X, MapPin, Calendar, Heart, ShieldAlert, Award, 
-  UserCheck, DollarSign, ArrowRight, Printer, Phone, CheckCircle 
+  UserCheck, DollarSign, ArrowRight, Printer, Phone, CheckCircle,
+  FileDown
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface StudentDetailsModalProps {
   student: Student;
@@ -19,6 +22,52 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   const printAreaRef = useRef<HTMLDivElement>(null);
   const lat = student.latitude || student.visitData?.latitude;
   const lng = student.longitude || student.visitData?.longitude;
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    const element = printAreaRef.current;
+    if (!element) return;
+
+    setIsDownloading(true);
+
+    try {
+      // Small delay to let rendering complete
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const canvas = await html2canvas(element, {
+        scale: 2, // High resolution
+        useCORS: true, // Crucial for external photo URLs
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1024,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const safeName = student.name.trim().replace(/\s+/g, '_');
+      pdf.save(`รายงานการเยี่ยมบ้าน_${safeName}_${student.id}.pdf`);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handlePrint = () => {
     // Elegant printing of just this student details modal!
@@ -59,6 +108,15 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              disabled={isDownloading}
+              onClick={handleDownloadPDF}
+              className="inline-flex items-center gap-1.5 text-xs px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold rounded-lg shadow-xs transition-all cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              {isDownloading ? 'กำลังสร้าง PDF...' : 'ดาวน์โหลดรายงานการเยี่ยมบ้าน'}
+            </button>
+            <button
+              type="button"
               onClick={handlePrint}
               className="inline-flex items-center gap-1.5 text-xs px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
             >
@@ -80,8 +138,8 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
           {/* Outer frame styling optimized for both screen and printing */}
           <div className="space-y-6 print:p-8 print:text-black">
             
-            {/* Print Header (Visible ONLY during print) */}
-            <div className="hidden print:block text-center border-b-2 border-slate-300 pb-5 mb-6">
+            {/* Print Header (Visible ONLY during print or PDF generation) */}
+            <div className={`${isDownloading ? 'block mb-6' : 'hidden print:block'} text-center border-b-2 border-slate-300 pb-5`}>
               <h1 className="text-lg font-black uppercase tracking-tight">วิทยาลัยอาชีวศึกษา - ระบบบันทึกรายงานการเยี่ยมบ้านนักศึกษา</h1>
               <p className="text-xs font-bold mt-1">แบบสรุปผลการประเมินคัดกรองเบื้องต้น รายบุคคล</p>
               <p className="text-[10px] text-slate-400 mt-0.5">พิมพ์จากข้อมูลระบบส่วนกลาง วันที่: {new Date().toLocaleDateString('th-TH')}</p>
@@ -136,7 +194,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                     <span>วันที่ลงเยี่ยมบ้าน: {d.visitDate}</span>
                   </div>
                 )}
-                {lat && lng && (
+                {lat && lng && !isDownloading && (
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
                     target="_blank"
@@ -261,15 +319,17 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                         <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
                         <span>ปักหมุด GPS ที่ละติจูด {d.latitude.toFixed(6)}, ลองจิจูด {d.longitude.toFixed(6)}</span>
                       </div>
-                      <a 
-                        href={`https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 hover:text-brand-800 text-xs font-bold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
-                      >
-                        นำทางบน Google Maps
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </a>
+                      {!isDownloading && (
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 hover:text-brand-800 text-xs font-bold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                        >
+                          นำทางบน Google Maps
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 )}
