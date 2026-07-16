@@ -39,3 +39,180 @@ body {
   background: #94a3b8;
 }
 
+/* ==========================================================================
+   PRINT-SPECIFIC CSS CONFIGURATION
+   Provides clean, professional formatting for dashboards & student cards.
+   ========================================================================== */
+@media print {
+  /* 1. Global Reset & Body Adjustments */
+  html, body {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: "Kanit", "Inter", sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 2. Hide Non-Printable Elements */
+  aside,
+  header,
+  nav,
+  button,
+  select,
+  input,
+  textarea,
+  iframe,
+  .no-print,
+  .print-hide,
+  .bg-slate-900\/60.backdrop-blur-xs, /* Modal Backdrop */
+  #header-view-google-sheet-btn,
+  #sync-panel-container,
+  .modal-close-btn,
+  .tabs-container,
+  .action-buttons,
+  [role="tooltip"] {
+    display: none !important;
+  }
+
+  /* 3. layout Expansion for Printing */
+  .flex-1 {
+    flex: none !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .min-h-screen {
+    min-height: auto !important;
+  }
+
+  /* Unset scrolling & overflow limits so all content flows onto printed pages */
+  .overflow-y-auto, 
+  .overflow-hidden, 
+  .overflow-x-hidden,
+  .max-h-\[90vh\],
+  .max-h-\[85vh\] {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* 4. Target the Active Modal (e.g., StudentDetailsModal) */
+  /* When printing a student card, hide the background App content entirely to prevent bleed-through */
+  body:has(.fixed) > div:not(.fixed) {
+    display: none !important;
+  }
+
+  /* Expand fixed overlays (like the Details modal) to a natural full-width flow */
+  body:has(.fixed) .fixed {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    z-index: auto !important;
+  }
+
+  body:has(.fixed) .fixed > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide the toolbar at the top of the modal details window */
+  body:has(.fixed) .bg-white.border-b.border-slate-200.px-6.py-4 {
+    display: none !important;
+  }
+
+  /* 5. Keep colors clean and high contrast on grayscale paper */
+  .border, .border-slate-200, .border-slate-300 {
+    border-color: #cbd5e1 !important;
+  }
+
+  .bg-white {
+    background-color: #ffffff !important;
+  }
+
+  /* Subtle background tints for tables & summaries */
+  .bg-slate-50, .bg-slate-100 {
+    background-color: #f1f5f9 !important;
+  }
+
+  .bg-brand-50 { background-color: #eff6ff !important; }
+  .bg-emerald-50 { background-color: #f0fdf4 !important; }
+  .bg-amber-50 { background-color: #fffbeb !important; }
+  .bg-rose-50 { background-color: #fff1f2 !important; }
+
+  /* Contrast adjustment for muted/faded texts */
+  .text-slate-400 { color: #64748b !important; }
+  .text-slate-500 { color: #475569 !important; }
+  
+  /* Remove drop shadows which look blocky and dirty in PDF/Print */
+  .shadow-md, .shadow-sm, .shadow-xs, .shadow-lg, .shadow-xl {
+    box-shadow: none !important;
+  }
+
+  /* Force responsive grid layouts to render as grid columns in print */
+  .grid {
+    display: grid !important;
+  }
+
+  /* 6. Smart Page Break Rules */
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  /* Prevent blocks, rows, and cards from awkwardly splitting across pages */
+  tr, 
+  p, 
+  h1, 
+  h2, 
+  h3, 
+  h4,
+  li,
+  .border.rounded-xl,
+  .border.rounded-lg,
+  .rounded-xl,
+  .rounded-lg,
+  .bg-white.rounded-xl {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Chart & Data adjustments */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 250px !important;
+    display: block !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+}
+

@@ -521,12 +521,16 @@ export default function App() {
       }
 
       const parsedStudents: Student[] = [];
+      const seenIds = new Set<string>();
 
       for (let i = 1; i < parsedData.length; i++) {
         const row = parsedData[i];
         if (!row[idIdx] || row[idIdx].trim() === '') continue; // Skip empty rows
 
         const studentId = row[idIdx].trim();
+        const normalizedId = studentId.toLowerCase();
+        if (seenIds.has(normalizedId)) continue;
+        seenIds.add(normalizedId);
         const prefix = prefixIdx !== -1 ? row[prefixIdx].trim() : '';
         const firstName = row[firstNameIdx].trim();
         const lastName = lastNameIdx !== -1 ? row[lastNameIdx].trim() : '';

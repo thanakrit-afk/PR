@@ -70,16 +70,8 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   };
 
   const handlePrint = () => {
-    // Elegant printing of just this student details modal!
-    const printContent = printAreaRef.current?.innerHTML;
-    const originalContent = document.body.innerHTML;
-    
-    if (printContent) {
-      document.body.innerHTML = printContent;
-      window.print();
-      // Restore page
-      window.location.reload();
-    }
+    // Elegant native printing with zero state loss or page reload!
+    window.print();
   };
 
   const getRiskLabel = (result: string | undefined) => {
@@ -199,7 +191,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                     href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer text-center"
+                    className="mt-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer text-center print:hidden"
                   >
                     <MapPin className="w-4 h-4" />
                     เปิด Google Maps
@@ -324,7 +316,7 @@ export const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
                           href={`https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 hover:text-brand-800 text-xs font-bold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                          className="px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 hover:text-brand-800 text-xs font-bold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 print:hidden"
                         >
                           นำทางบน Google Maps
                           <ArrowRight className="w-3.5 h-3.5" />

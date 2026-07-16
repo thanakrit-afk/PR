@@ -412,7 +412,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* Department performance chart (7 columns) */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 lg:col-span-7 space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 lg:col-span-7 print:col-span-12 space-y-4">
           <div>
             <h3 className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">ร้อยละความสำเร็จรายแผนกวิชา</h3>
             <p className="text-[11px] text-slate-400">สรุปความคืบหน้าการทำงานเยี่ยมบ้านของครูแผนกต่างๆ</p>
@@ -440,7 +440,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
         </div>
 
         {/* PDF Print Filter Selection (5 columns) */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 lg:col-span-5 flex flex-col justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 lg:col-span-5 flex flex-col justify-between print:hidden">
           <div className="space-y-3">
             <div>
               <h3 className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">จัดพิมพ์เอกสารแบบรายห้อง</h3>
@@ -492,7 +492,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
           </div>
           
           {/* Filters controls */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             {/* Level Filter */}
             <select
               value={selectedLevel}
@@ -553,7 +553,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
                   <th className="py-3 px-4">กลุ่มคัดกรอง</th>
                   <th className="py-3 px-4">ความสุ่มเสี่ยงที่พบ</th>
                   <th className="py-3 px-4">ติดต่อผู้ปกครอง</th>
-                  <th className="py-3 px-4 rounded-r-lg text-center">จัดการ</th>
+                  <th className="py-3 px-4 rounded-r-lg text-center print:hidden">จัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -607,7 +607,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-4 text-center print:hidden">
                         <button
                           type="button"
                           onClick={() => onViewStudentDetails(student)}
